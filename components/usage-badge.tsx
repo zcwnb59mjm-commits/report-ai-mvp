@@ -1,10 +1,8 @@
+import { PaidPlanBadge } from "@/components/paid-plan-badge";
 import { RestoreSubscriptionForm } from "@/components/restore-subscription-form";
 import { SubscribeButton } from "@/components/subscribe-button";
 import type { UsageBadgeState } from "@/lib/access";
-import {
-  MONTHLY_PLAN_ACTIVE_LABEL,
-  MONTHLY_PLAN_REGISTER_MESSAGE,
-} from "@/lib/pricing";
+import { MONTHLY_PLAN_REGISTER_MESSAGE } from "@/lib/pricing";
 
 type UsageBadgeProps = {
   mounted: boolean;
@@ -33,11 +31,11 @@ export function UsageBadge({
   if (state === null) return null;
 
   if (state.mode === "lifetime") {
-    return <span className="usage-badge-lifetime">永久利用プラン有効</span>;
+    return <PaidPlanBadge variant="lifetime" />;
   }
 
   if (state.mode === "subscription") {
-    return <span className="usage-badge-lifetime">{MONTHLY_PLAN_ACTIVE_LABEL}</span>;
+    return <PaidPlanBadge variant="subscription" />;
   }
 
   if (state.mode === "exhausted") {
