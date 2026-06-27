@@ -110,6 +110,10 @@ body {
     @apply inline-flex items-center rounded-full border border-black/10 bg-neutral-100 px-4 py-2 text-[13px] font-semibold text-neutral-600;
   }
 
+  .usage-badge-lifetime {
+    @apply inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-[13px] font-semibold tracking-tight text-white shadow-[0_4px_14px_rgba(5,150,105,0.25)];
+  }
+
   .alert-message {
     @apply rounded-2xl border border-black/8 bg-neutral-50 px-5 py-4 text-[14px] leading-relaxed text-neutral-600;
   }

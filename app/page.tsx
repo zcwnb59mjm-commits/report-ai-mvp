@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SerialCodeSection } from "@/components/serial-code-section";
+
 const SITE = {
   name: "ReportAI",
   tagline: "大学生向けレポートAI",
@@ -183,6 +185,7 @@ export default function Home() {
         <HeroSection />
         <FeaturesSection />
         <PricingSection />
+        <SerialCodeSection />
         <CtaSection />
       </main>
       <SiteFooter />

@@ -6,6 +6,12 @@ import OpenAI, {
 import { NextResponse } from "next/server";
 
 import { getOpenAIApiKey } from "@/lib/openai-api-key";
+import {
+  buildOutlineInput,
+  buildOutlineInstructions,
+  OUTLINE_JSON_SCHEMA_DESCRIPTIONS,
+  parseReportGenerationInput,
+} from "@/lib/report-generation";
 import type { ReportGenerateResult } from "@/lib/report";
 
 export const dynamic = "force-dynamic";
@@ -21,23 +27,23 @@ const REPORT_JSON_SCHEMA = {
       properties: {
         introduction: {
           type: "string",
-          description: "はじめにの執筆方針・含める内容",
+          description: OUTLINE_JSON_SCHEMA_DESCRIPTIONS.introduction,
         },
         body1: {
           type: "string",
-          description: "本論①の執筆方針・論点",
+          description: OUTLINE_JSON_SCHEMA_DESCRIPTIONS.body1,
         },
         body2: {
           type: "string",
-          description: "本論②の執筆方針・論点",
+          description: OUTLINE_JSON_SCHEMA_DESCRIPTIONS.body2,
         },
         discussion: {
           type: "string",
-          description: "考察の執筆方針・深掘りポイント",
+          description: OUTLINE_JSON_SCHEMA_DESCRIPTIONS.discussion,
         },
         conclusion: {
           type: "string",
-          description: "まとめの執筆方針・結論の方向性",
+          description: OUTLINE_JSON_SCHEMA_DESCRIPTIONS.conclusion,
         },
       },
       required: ["introduction", "body1", "body2", "discussion", "conclusion"],
@@ -48,55 +54,7 @@ const REPORT_JSON_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-type GenerateRequestBody = {
-  theme?: unknown;
-  wordCount?: unknown;
-  courseName?: unknown;
-  submissionFormat?: unknown;
-};
-
 type ParsedReportContent = Pick<ReportGenerateResult, "outline">;
-
-function parseRequestBody(body: GenerateRequestBody) {
-  const theme = typeof body.theme === "string" ? body.theme.trim() : "";
-  const courseName =
-    typeof body.courseName === "string" ? body.courseName.trim() : "";
-  const submissionFormat =
-    typeof body.submissionFormat === "string"
-      ? body.submissionFormat.trim()
-      : "";
-  const wordCount =
-    typeof body.wordCount === "number"
-      ? body.wordCount
-      : typeof body.wordCount === "string"
-        ? Number(body.wordCount)
-        : NaN;
-
-  if (!theme) {
-    return { error: "レポートテーマを入力してください。" };
-  }
-
-  if (!courseName) {
-    return { error: "授業名を入力してください。" };
-  }
-
-  if (!submissionFormat) {
-    return { error: "提出形式を選択してください。" };
-  }
-
-  if (!Number.isFinite(wordCount) || wordCount < 500 || wordCount > 20000) {
-    return { error: "文字数は500〜20000の範囲で入力してください。" };
-  }
-
-  return {
-    data: {
-      theme,
-      wordCount: Math.round(wordCount),
-      courseName,
-      submissionFormat,
-    },
-  };
-}
 
 function parseReportContent(raw: string): ParsedReportContent {
   const parsed = JSON.parse(raw) as ParsedReportContent;
@@ -153,10 +111,10 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: GenerateRequestBody;
+  let body: Record<string, unknown>;
 
   try {
-    body = (await request.json()) as GenerateRequestBody;
+    body = (await request.json()) as Record<string, unknown>;
   } catch {
     return NextResponse.json(
       { error: "リクエスト形式が正しくありません。" },
@@ -164,13 +122,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsedRequest = parseRequestBody(body);
+  const parsedRequest = parseReportGenerationInput(body);
 
   if ("error" in parsedRequest) {
     return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
   }
 
-  const { theme, wordCount, courseName, submissionFormat } = parsedRequest.data;
+  const input = parsedRequest.data;
 
   const openai = new OpenAI({
     apiKey,
@@ -180,20 +138,8 @@ export async function POST(request: Request) {
     const response = await openai.responses.create({
       model: MODEL,
       reasoning: { effort: "low" },
-      instructions: [
-        "あなたは大学生向けレポート作成アシスタントです。",
-        "指定されたテーマ・文字数・授業名・提出形式に合わせて、論理的なレポート構成案を日本語で作成してください。",
-        "各セクションは具体的な執筆方針を1〜3文で記述してください。",
-        "提出形式に応じた分量配分や書き方の方針も反映してください。",
-      ].join("\n"),
-      input: [
-        "以下の条件でレポート構成案を作成してください。",
-        "",
-        `レポートテーマ: ${theme}`,
-        `文字数: ${wordCount}字`,
-        `授業名: ${courseName}`,
-        `提出形式: ${submissionFormat}`,
-      ].join("\n"),
+      instructions: buildOutlineInstructions(),
+      input: buildOutlineInput(input),
       text: {
         format: {
           type: "json_schema",
@@ -213,10 +159,7 @@ export async function POST(request: Request) {
     const reportContent = parseReportContent(content);
 
     const result: ReportGenerateResult = {
-      theme,
-      wordCount,
-      courseName,
-      submissionFormat,
+      ...input,
       ...reportContent,
     };
 

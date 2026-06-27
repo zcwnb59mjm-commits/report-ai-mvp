@@ -6,97 +6,20 @@ import OpenAI, {
 import { NextResponse } from "next/server";
 
 import { getOpenAIApiKey } from "@/lib/openai-api-key";
-import { OUTLINE_SECTIONS, type ReportOutline } from "@/lib/report";
+import {
+  buildBodyDraftInput,
+  buildBodyDraftInstructions,
+  buildHumanizeInput,
+  buildHumanizeInstructions,
+  parseOutline,
+  parseReportGenerationInput,
+  toGenerationInputFromResult,
+} from "@/lib/report-generation";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const MODEL = "gpt-5-mini";
-
-type GenerateBodyRequestBody = {
-  theme?: unknown;
-  wordCount?: unknown;
-  courseName?: unknown;
-  submissionFormat?: unknown;
-  outline?: unknown;
-};
-
-function parseOutline(value: unknown): ReportOutline | null {
-  if (!value || typeof value !== "object") return null;
-
-  const outline = value as Record<string, unknown>;
-
-  if (
-    typeof outline.introduction !== "string" ||
-    typeof outline.body1 !== "string" ||
-    typeof outline.body2 !== "string" ||
-    typeof outline.discussion !== "string" ||
-    typeof outline.conclusion !== "string"
-  ) {
-    return null;
-  }
-
-  return {
-    introduction: outline.introduction,
-    body1: outline.body1,
-    body2: outline.body2,
-    discussion: outline.discussion,
-    conclusion: outline.conclusion,
-  };
-}
-
-function parseRequestBody(body: GenerateBodyRequestBody) {
-  const theme = typeof body.theme === "string" ? body.theme.trim() : "";
-  const courseName =
-    typeof body.courseName === "string" ? body.courseName.trim() : "";
-  const submissionFormat =
-    typeof body.submissionFormat === "string"
-      ? body.submissionFormat.trim()
-      : "";
-  const wordCount =
-    typeof body.wordCount === "number"
-      ? body.wordCount
-      : typeof body.wordCount === "string"
-        ? Number(body.wordCount)
-        : NaN;
-  const outline = parseOutline(body.outline);
-
-  if (!theme) {
-    return { error: "レポートテーマがありません。" };
-  }
-
-  if (!courseName) {
-    return { error: "授業名がありません。" };
-  }
-
-  if (!submissionFormat) {
-    return { error: "提出形式がありません。" };
-  }
-
-  if (!Number.isFinite(wordCount) || wordCount < 500 || wordCount > 20000) {
-    return { error: "文字数が不正です。" };
-  }
-
-  if (!outline) {
-    return { error: "レポート構成がありません。" };
-  }
-
-  return {
-    data: {
-      theme,
-      wordCount: Math.round(wordCount),
-      courseName,
-      submissionFormat,
-      outline,
-    },
-  };
-}
-
-function formatOutlineForPrompt(outline: ReportOutline): string {
-  return OUTLINE_SECTIONS.map(
-    (section) => `【${section.label}】\n${outline[section.key]}`,
-  ).join("\n\n");
-}
 
 function getOpenAIErrorMessage(error: unknown): string {
   if (error instanceof AuthenticationError) {
@@ -136,10 +59,10 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: GenerateBodyRequestBody;
+  let body: Record<string, unknown>;
 
   try {
-    body = (await request.json()) as GenerateBodyRequestBody;
+    body = (await request.json()) as Record<string, unknown>;
   } catch {
     return NextResponse.json(
       { error: "リクエスト形式が正しくありません。" },
@@ -147,51 +70,61 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsedRequest = parseRequestBody(body);
+  const parsedInput = parseReportGenerationInput(body);
 
-  if ("error" in parsedRequest) {
-    return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
+  if ("error" in parsedInput) {
+    return NextResponse.json({ error: parsedInput.error }, { status: 400 });
   }
 
-  const { theme, wordCount, courseName, submissionFormat, outline } =
-    parsedRequest.data;
+  const outline = parseOutline(body.outline);
+
+  if (!outline) {
+    return NextResponse.json(
+      { error: "レポート構成がありません。" },
+      { status: 400 },
+    );
+  }
+
+  const generationInput = toGenerationInputFromResult({
+    ...parsedInput.data,
+    outline,
+  });
+  const maxOutputTokens = Math.min(
+    Math.round(generationInput.wordCount * 2.5),
+    32000,
+  );
 
   const openai = new OpenAI({
     apiKey,
   });
 
   try {
-    const response = await openai.responses.create({
+    const draftResponse = await openai.responses.create({
       model: MODEL,
-      reasoning: { effort: "low" },
-      max_output_tokens: Math.min(Math.round(wordCount * 2.5), 32000),
-      instructions: [
-        "あなたは大学生向けレポート作成アシスタントです。",
-        "指定された構成案に沿って、レポート本文を日本語で執筆してください。",
-        "文体は大学生が自然に書いたような、丁寧な「です・ます調」にしてください。",
-        "堅すぎる論文調や、カジュアルすぎる口語は避けてください。",
-        "各セクションの見出し（はじめに、本論①、本論②、考察、まとめ）を行頭に付け、段落を空けて読みやすくしてください。",
-        "指定文字数におおよそ合わせてください（±10%程度）。",
-        "参考文献リストや脚注は含めないでください。",
-        "本文のみを出力し、前置きや解説は不要です。",
-      ].join("\n"),
-      input: [
-        "以下の条件と構成案に基づき、レポート本文を執筆してください。",
-        "",
-        `レポートテーマ: ${theme}`,
-        `文字数: 約${wordCount}字`,
-        `授業名: ${courseName}`,
-        `提出形式: ${submissionFormat}`,
-        "",
-        "【構成案】",
-        formatOutlineForPrompt(outline),
-      ].join("\n"),
+      reasoning: { effort: "medium" },
+      max_output_tokens: maxOutputTokens,
+      instructions: buildBodyDraftInstructions(generationInput),
+      input: buildBodyDraftInput(generationInput, outline),
     });
 
-    const bodyText = response.output_text?.trim();
+    const draftText = draftResponse.output_text?.trim();
+
+    if (!draftText) {
+      throw new Error("Empty draft response");
+    }
+
+    const humanizedResponse = await openai.responses.create({
+      model: MODEL,
+      reasoning: { effort: "low" },
+      max_output_tokens: maxOutputTokens,
+      instructions: buildHumanizeInstructions(generationInput),
+      input: buildHumanizeInput(generationInput, draftText),
+    });
+
+    const bodyText = humanizedResponse.output_text?.trim();
 
     if (!bodyText) {
-      throw new Error("Empty model response");
+      throw new Error("Empty humanized response");
     }
 
     return NextResponse.json({ body: bodyText });

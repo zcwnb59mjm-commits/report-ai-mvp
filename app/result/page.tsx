@@ -5,21 +5,26 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { LoadingOverlay } from "@/components/loading-overlay";
+import { SerialCodeForm } from "@/components/serial-code-form";
 import { UsageBadge } from "@/components/usage-badge";
 import {
-  isReportGenerateResult,
+  canGenerateReport,
+  getUsageBadgeState,
+  recordGenerationUse,
+} from "@/lib/access";
+import {
+  getReportLevelLabel,
+  getWritingStyleLabel,
+} from "@/lib/report-generation";
+import {
+  normalizeReportGenerateResult,
   OUTLINE_SECTIONS,
   REPORT_RESULT_STORAGE_KEY,
   type ReportGenerateResult,
 } from "@/lib/report";
 import { downloadReportDocx } from "@/lib/export-report-docx";
 import { downloadReportPdf } from "@/lib/export-report-pdf";
-import {
-  canUseFreeGeneration,
-  getRemainingUses,
-  incrementUsageCount,
-  USAGE_LIMIT_MESSAGE,
-} from "@/lib/usage-limit";
+import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
 
 const SITE_NAME = "ReportAI";
 
@@ -69,13 +74,15 @@ export default function ResultPage() {
   const [copyLabel, setCopyLabel] = useState("コピー");
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [remainingUses, setRemainingUses] = useState<number | null>(null);
+  const [usageState, setUsageState] = useState<ReturnType<
+    typeof getUsageBadgeState
+  > | null>(null);
 
   useEffect(() => {
-    setRemainingUses(getRemainingUses());
+    setUsageState(getUsageBadgeState());
   }, []);
 
-  const isLimitReached = remainingUses === 0;
+  const isLimitReached = usageState?.mode === "exhausted";
   const isExporting = isDownloadingDocx || isDownloadingPdf;
 
   useEffect(() => {
@@ -89,11 +96,16 @@ export default function ResultPage() {
     try {
       const parsed: unknown = JSON.parse(stored);
 
-      if (!isReportGenerateResult(parsed)) {
+      const normalized =
+        typeof parsed === "object" && parsed !== null
+          ? normalizeReportGenerateResult(parsed as Record<string, unknown>)
+          : null;
+
+      if (!normalized) {
         throw new Error("Invalid stored result");
       }
 
-      setResult(parsed);
+      setResult(normalized);
     } catch {
       sessionStorage.removeItem(REPORT_RESULT_STORAGE_KEY);
       router.replace("/generate");
@@ -110,9 +122,9 @@ export default function ResultPage() {
 
     setBodyError(null);
 
-    if (!canUseFreeGeneration()) {
+    if (!canGenerateReport()) {
       setBodyError(USAGE_LIMIT_MESSAGE);
-      setRemainingUses(0);
+      setUsageState(getUsageBadgeState());
       return;
     }
 
@@ -129,6 +141,11 @@ export default function ResultPage() {
           wordCount: result.wordCount,
           courseName: result.courseName,
           submissionFormat: result.submissionFormat,
+          writingStyle: result.writingStyle,
+          reportLevel: result.reportLevel,
+          professorInstructions: result.professorInstructions,
+          requiredKeywords: result.requiredKeywords,
+          sourceMaterials: result.sourceMaterials,
           outline: result.outline,
         }),
       });
@@ -143,8 +160,8 @@ export default function ResultPage() {
         throw new Error("本文の生成に失敗しました。");
       }
 
-      incrementUsageCount();
-      setRemainingUses(getRemainingUses());
+      recordGenerationUse();
+      setUsageState(getUsageBadgeState());
       persistResult({ ...result, body: data.body });
     } catch (error) {
       setBodyError(
@@ -237,7 +254,11 @@ export default function ResultPage() {
               構成を確認し、本文を生成できます。
             </p>
           </div>
-          <UsageBadge remaining={remainingUses} />
+          <UsageBadge state={usageState} />
+          <SerialCodeForm
+            compact
+            onUnlocked={() => setUsageState(getUsageBadgeState())}
+          />
         </div>
 
         <div className="mt-12 space-y-8">
@@ -250,6 +271,26 @@ export default function ResultPage() {
               />
               <MetaItem label="授業名" value={result.courseName} />
               <MetaItem label="提出形式" value={result.submissionFormat} />
+              <MetaItem
+                label="文体"
+                value={getWritingStyleLabel(result.writingStyle)}
+              />
+              <MetaItem
+                label="レポートレベル"
+                value={getReportLevelLabel(result.reportLevel)}
+              />
+              {result.professorInstructions ? (
+                <MetaItem
+                  label="教授からの指示"
+                  value={result.professorInstructions}
+                />
+              ) : null}
+              {result.requiredKeywords.length > 0 ? (
+                <MetaItem
+                  label="必須キーワード"
+                  value={result.requiredKeywords.join("、")}
+                />
+              ) : null}
             </dl>
           </ResultCard>
 

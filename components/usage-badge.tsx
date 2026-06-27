@@ -1,13 +1,18 @@
+import type { UsageBadgeState } from "@/lib/access";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
 
 type UsageBadgeProps = {
-  remaining: number | null;
+  state: UsageBadgeState | null;
 };
 
-export function UsageBadge({ remaining }: UsageBadgeProps) {
-  if (remaining === null) return null;
+export function UsageBadge({ state }: UsageBadgeProps) {
+  if (state === null) return null;
 
-  if (remaining === 0) {
+  if (state.mode === "lifetime") {
+    return <span className="usage-badge-lifetime">永久利用プラン有効</span>;
+  }
+
+  if (state.mode === "exhausted") {
     return (
       <div className="space-y-4">
         <span className="usage-badge-exhausted">無料利用 0 回</span>
@@ -19,7 +24,7 @@ export function UsageBadge({ remaining }: UsageBadgeProps) {
   return (
     <span className="usage-badge">
       <span className="usage-badge-dot" aria-hidden="true" />
-      無料利用 残り {remaining} 回
+      無料利用 残り {state.remaining} 回
     </span>
   );
 }
