@@ -13,6 +13,10 @@ import {
   parseReportGenerationInput,
 } from "@/lib/report-generation";
 import type { ReportGenerateResult } from "@/lib/report";
+import {
+  recordGenerationAccessUse,
+  requireGenerationAccess,
+} from "@/lib/user-access/require-generation-access";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -128,6 +132,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
   }
 
+  const access = await requireGenerationAccess();
+
+  if (!access.allowed) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
   const input = parsedRequest.data;
 
   const openai = new OpenAI({
@@ -162,6 +172,8 @@ export async function POST(request: Request) {
       ...input,
       ...reportContent,
     };
+
+    await recordGenerationAccessUse(access.userId);
 
     return NextResponse.json(result);
   } catch (error) {

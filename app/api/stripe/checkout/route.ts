@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 
+import { auth } from "@/auth";
 import { getAppOrigin } from "@/lib/app-url";
 import { getStripePriceId, getStripeSecretKey } from "@/lib/stripe-config";
 
@@ -30,10 +31,11 @@ export async function POST(request: Request) {
   }
 
   const origin = getAppOrigin(request);
+  const session = await auth();
 
   try {
     const stripe = getStripeClient(secretKey);
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [
         {
@@ -43,13 +45,15 @@ export async function POST(request: Request) {
       ],
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/generate`,
+      customer_email: session?.user?.email ?? undefined,
+      metadata: session?.user?.id ? { userId: session.user.id } : undefined,
     });
 
-    if (!session.url) {
+    if (!checkoutSession.url) {
       throw new Error("Checkout session URL is missing");
     }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: checkoutSession.url });
   } catch (error) {
     console.error("Failed to create Stripe Checkout Session:", error);
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 import { restoreSubscriptionByEmail } from "@/lib/access/sync-subscription-client";
+import { syncLoggedInUserFromClientState } from "@/lib/user-access/client-access";
 
 type RestoreSubscriptionFormProps = {
   compact?: boolean;
@@ -13,19 +15,35 @@ export function RestoreSubscriptionForm({
   compact = false,
   onRestored,
 }: RestoreSubscriptionFormProps) {
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      setEmail(session.user.email);
+    }
+  }, [session?.user?.email]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
     setIsSubmitting(true);
 
-    const result = await restoreSubscriptionByEmail(email.trim());
+    const restoreEmail = email.trim() || session?.user?.email || "";
+    const result = await restoreSubscriptionByEmail(restoreEmail);
 
     if (result.success) {
-      setEmail("");
+      if (status === "authenticated") {
+        try {
+          await syncLoggedInUserFromClientState();
+        } catch {
+          // localStorage restore still succeeded
+        }
+      }
+
+      setEmail(restoreEmail);
       onRestored?.();
       setIsSubmitting(false);
       return;
@@ -67,7 +85,7 @@ export function RestoreSubscriptionForm({
           onChange={(event) => setEmail(event.target.value)}
           placeholder="example@email.com"
           className="input-field"
-          disabled={isSubmitting}
+          disabled={isSubmitting || status === "loading"}
           autoComplete="email"
           required
         />

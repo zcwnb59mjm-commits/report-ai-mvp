@@ -15,6 +15,10 @@ import {
   parseReportGenerationInput,
   toGenerationInputFromResult,
 } from "@/lib/report-generation";
+import {
+  recordGenerationAccessUse,
+  requireGenerationAccess,
+} from "@/lib/user-access/require-generation-access";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -85,6 +89,12 @@ export async function POST(request: Request) {
     );
   }
 
+  const access = await requireGenerationAccess();
+
+  if (!access.allowed) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
   const generationInput = toGenerationInputFromResult({
     ...parsedInput.data,
     outline,
@@ -126,6 +136,8 @@ export async function POST(request: Request) {
     if (!bodyText) {
       throw new Error("Empty humanized response");
     }
+
+    await recordGenerationAccessUse(access.userId);
 
     return NextResponse.json({ body: bodyText });
   } catch (error) {

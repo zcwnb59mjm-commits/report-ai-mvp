@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AuthButton } from "@/components/auth-button";
 import { SerialCodeSection } from "@/components/serial-code-section";
 
 const SITE = {
@@ -43,14 +44,17 @@ const FOOTER_LINKS = [
   { label: "お問い合わせ", href: "/contact" },
 ] as const;
 
-function SiteHeader() {
+function LandingHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner max-w-6xl">
         <span className="site-logo">{SITE.name}</span>
-        <Link href={SITE.ctaHref} className="btn-secondary px-5 py-2.5 text-[13px]">
-          {SITE.ctaLabel}
-        </Link>
+        <div className="flex items-center gap-3">
+          <AuthButton compact />
+          <Link href={SITE.ctaHref} className="btn-secondary px-5 py-2.5 text-[13px]">
+            {SITE.ctaLabel}
+          </Link>
+        </div>
       </div>
     </header>
   );
@@ -180,7 +184,7 @@ function SiteFooter() {
 export default function Home() {
   return (
     <div className="page-shell">
-      <SiteHeader />
+      <LandingHeader />
       <main>
         <HeroSection />
         <FeaturesSection />

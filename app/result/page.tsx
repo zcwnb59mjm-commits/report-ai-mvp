@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-
+import { AuthButton } from "@/components/auth-button";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { SerialCodeForm } from "@/components/serial-code-form";
 import { UsageBadge } from "@/components/usage-badge";
 import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
-import { canGenerateReport, recordGenerationUse } from "@/lib/access";
 import {
   getReportLevelLabel,
   getWritingStyleLabel,
@@ -22,8 +21,10 @@ import {
 import { downloadReportDocx } from "@/lib/export-report-docx";
 import { downloadReportPdf } from "@/lib/export-report-pdf";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
-
-const SITE_NAME = "ReportAI";
+import {
+  canGenerateReportForCurrentUser,
+  recordGenerationUseForCurrentUser,
+} from "@/lib/user-access/generation-client";
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return <h2 className="section-heading">{children}</h2>;
@@ -71,7 +72,8 @@ export default function ResultPage() {
   const [copyLabel, setCopyLabel] = useState("コピー");
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
+  const { mounted, usageState, refreshUsageState, isLoggedIn } =
+    useUsageBadgeState();
 
   const isLimitReached = mounted && usageState?.mode === "exhausted";
   const isExporting = isDownloadingDocx || isDownloadingPdf;
@@ -113,9 +115,9 @@ export default function ResultPage() {
 
     setBodyError(null);
 
-    if (!canGenerateReport()) {
+    if (!(await canGenerateReportForCurrentUser(isLoggedIn))) {
       setBodyError(USAGE_LIMIT_MESSAGE);
-      refreshUsageState();
+      await refreshUsageState();
       return;
     }
 
@@ -151,8 +153,8 @@ export default function ResultPage() {
         throw new Error("本文の生成に失敗しました。");
       }
 
-      recordGenerationUse();
-      refreshUsageState();
+      await recordGenerationUseForCurrentUser(isLoggedIn);
+      await refreshUsageState();
       persistResult({ ...result, body: data.body });
     } catch (error) {
       setBodyError(
@@ -228,11 +230,14 @@ export default function ResultPage() {
       <header className="site-header">
         <div className="site-header-inner max-w-3xl">
           <Link href="/" className="site-logo">
-            {SITE_NAME}
+            ReportAI
           </Link>
-          <Link href="/generate" className="btn-secondary px-5 py-2.5 text-[13px]">
-            新しく作成
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/generate" className="btn-secondary px-5 py-2.5 text-[13px]">
+              新しく作成
+            </Link>
+            <AuthButton compact />
+          </div>
         </div>
       </header>
 
@@ -248,9 +253,16 @@ export default function ResultPage() {
           <UsageBadge
             mounted={mounted}
             state={usageState}
-            onSubscriptionRestored={refreshUsageState}
+            onSubscriptionRestored={() => {
+              void refreshUsageState();
+            }}
           />
-          <SerialCodeForm compact onUnlocked={refreshUsageState} />
+          <SerialCodeForm
+            compact
+            onUnlocked={() => {
+              void refreshUsageState();
+            }}
+          />
         </div>
 
         <div className="mt-12 space-y-8">

@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { SerialCodeForm } from "@/components/serial-code-form";
+import { SiteHeader } from "@/components/site-header";
 import { UsageBadge } from "@/components/usage-badge";
 import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
-import { canGenerateReport, recordGenerationUse } from "@/lib/access";
 import {
   REPORT_RESULT_STORAGE_KEY,
   REPORT_LEVELS,
@@ -17,14 +16,17 @@ import {
   type ReportGenerateResult,
 } from "@/lib/report";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
-
-const SITE_NAME = "ReportAI";
+import {
+  canGenerateReportForCurrentUser,
+  recordGenerationUseForCurrentUser,
+} from "@/lib/user-access/generation-client";
 
 export default function GeneratePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
+  const { mounted, usageState, refreshUsageState, isLoggedIn } =
+    useUsageBadgeState();
 
   const isLimitReached = mounted && usageState?.mode === "exhausted";
 
@@ -32,9 +34,9 @@ export default function GeneratePage() {
     event.preventDefault();
     setErrorMessage(null);
 
-    if (!canGenerateReport()) {
+    if (!(await canGenerateReportForCurrentUser(isLoggedIn))) {
       setErrorMessage(USAGE_LIMIT_MESSAGE);
-      refreshUsageState();
+      await refreshUsageState();
       return;
     }
 
@@ -83,8 +85,8 @@ export default function GeneratePage() {
         throw new Error(data.error ?? "レポート構成の生成に失敗しました。");
       }
 
-      recordGenerationUse();
-      refreshUsageState();
+      await recordGenerationUseForCurrentUser(isLoggedIn);
+      await refreshUsageState();
       sessionStorage.setItem(REPORT_RESULT_STORAGE_KEY, JSON.stringify(data));
       router.push("/result");
     } catch (error) {
@@ -101,13 +103,7 @@ export default function GeneratePage() {
     <div className="page-shell">
       {isSubmitting ? <LoadingOverlay /> : null}
 
-      <header className="site-header">
-        <div className="site-header-inner">
-          <Link href="/" className="site-logo">
-            {SITE_NAME}
-          </Link>
-        </div>
-      </header>
+      <SiteHeader homeHref="/" />
 
       <main className="page-main">
         <div className="space-y-6 text-center sm:text-left">
@@ -121,9 +117,16 @@ export default function GeneratePage() {
           <UsageBadge
             mounted={mounted}
             state={usageState}
-            onSubscriptionRestored={refreshUsageState}
+            onSubscriptionRestored={() => {
+              void refreshUsageState();
+            }}
           />
-          <SerialCodeForm compact onUnlocked={refreshUsageState} />
+          <SerialCodeForm
+            compact
+            onUnlocked={() => {
+              void refreshUsageState();
+            }}
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="card mt-12 space-y-8">

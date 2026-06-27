@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useLayoutEffect, useEffect, useState } from "react";
 
 import { RestoreSubscriptionForm } from "@/components/restore-subscription-form";
@@ -9,13 +10,15 @@ import {
   activateCheckoutSessionWithRetry,
   storePendingCheckoutSessionId,
 } from "@/lib/access/activate-checkout-session";
+import { syncLoggedInUserFromClientState } from "@/lib/user-access/client-access";
 
 const SITE_NAME = "ReportAI";
 
 export function SuccessPageContent() {
   const searchParams = useSearchParams();
+  const { status: authStatus } = useSession();
   const sessionId = searchParams.get("session_id");
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
+  const [pageStatus, setPageStatus] = useState<"loading" | "success" | "error">(
     sessionId ? "loading" : "error",
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(
@@ -29,7 +32,7 @@ export function SuccessPageContent() {
   }, [sessionId]);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || authStatus === "loading") return;
 
     const checkoutSessionId = sessionId;
     let cancelled = false;
@@ -40,11 +43,19 @@ export function SuccessPageContent() {
       if (cancelled) return;
 
       if (result.success) {
-        setStatus("success");
+        if (authStatus === "authenticated") {
+          try {
+            await syncLoggedInUserFromClientState();
+          } catch {
+            // localStorage activation still succeeded
+          }
+        }
+
+        setPageStatus("success");
         return;
       }
 
-      setStatus("error");
+      setPageStatus("error");
       setErrorMessage(result.error);
     }
 
@@ -53,7 +64,7 @@ export function SuccessPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [authStatus, sessionId]);
 
   return (
     <div className="page-shell">
@@ -66,7 +77,7 @@ export function SuccessPageContent() {
       </header>
 
       <main className="page-main text-center sm:text-left">
-        {status === "loading" ? (
+        {pageStatus === "loading" ? (
           <>
             <p className="page-eyebrow">登録確認中</p>
             <h1 className="page-title">決済を確認しています</h1>
@@ -76,7 +87,7 @@ export function SuccessPageContent() {
           </>
         ) : null}
 
-        {status === "success" ? (
+        {pageStatus === "success" ? (
           <>
             <p className="page-eyebrow">登録完了</p>
             <h1 className="page-title">ご登録ありがとうございます</h1>
@@ -91,7 +102,7 @@ export function SuccessPageContent() {
           </>
         ) : null}
 
-        {status === "error" ? (
+        {pageStatus === "error" ? (
           <>
             <p className="page-eyebrow">登録確認</p>
             <h1 className="page-title">有料プランを有効化できませんでした</h1>

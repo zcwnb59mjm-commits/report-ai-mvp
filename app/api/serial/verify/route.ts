@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { auth } from "@/auth";
 import { getLifetimeSerialCodes } from "@/lib/lifetime-serial-code";
+import { setUserLifetimeUnlocked } from "@/lib/user-access/server-access";
 import { isValidSerialCode } from "@/lib/verify-serial-code";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +48,12 @@ export async function POST(request: Request) {
       { valid: false, error: INVALID_SERIAL_MESSAGE },
       { status: 401 },
     );
+  }
+
+  const session = await auth();
+
+  if (session?.user?.id) {
+    await setUserLifetimeUnlocked(session.user.id);
   }
 
   return NextResponse.json({ valid: true });

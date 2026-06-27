@@ -1,5 +1,7 @@
 import type Stripe from "stripe";
 
+import { linkStripeSubscriptionFromCheckoutEmail } from "@/lib/user-access/link-stripe-subscription";
+
 export type SubscriptionRecord = {
   customerId: string | null;
   customerEmail: string | null;
@@ -31,10 +33,6 @@ function isPaidSubscriptionCheckout(session: Stripe.Checkout.Session): boolean {
   );
 }
 
-/**
- * checkout.session.completed から有料状態を記録する。
- * 将来は DB 保存に差し替える。
- */
 export async function recordSubscriptionCheckout(
   session: Stripe.Checkout.Session,
 ): Promise<SubscriptionRecord | null> {
@@ -52,6 +50,11 @@ export async function recordSubscriptionCheckout(
     );
     return null;
   }
+
+  await linkStripeSubscriptionFromCheckoutEmail(record.customerEmail, {
+    subscriptionId: record.subscriptionId,
+    customerId: record.customerId,
+  });
 
   return record;
 }

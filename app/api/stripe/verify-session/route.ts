@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { auth } from "@/auth";
 import { toSubscriptionRecord } from "@/lib/subscription/record-checkout";
 import { syncSubscriptionWithStripe } from "@/lib/subscription/sync-subscription";
 import { createStripeClient } from "@/lib/stripe/create-stripe-client";
+import { linkStripeSubscriptionToUserById } from "@/lib/user-access/link-stripe-subscription";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -84,8 +86,27 @@ export async function POST(request: Request) {
       });
 
       if (synced.valid) {
+        const authSession = await auth();
+
+        if (authSession?.user?.id) {
+          await linkStripeSubscriptionToUserById(authSession.user.id, {
+            email: synced.customerEmail ?? record.customerEmail,
+            subscriptionId: synced.subscriptionId,
+          });
+        }
+
         return NextResponse.json(synced);
       }
+    }
+
+    const authSession = await auth();
+
+    if (authSession?.user?.id) {
+      await linkStripeSubscriptionToUserById(authSession.user.id, {
+        email: record.customerEmail,
+        subscriptionId,
+        customerId: record.customerId,
+      });
     }
 
     return NextResponse.json({
