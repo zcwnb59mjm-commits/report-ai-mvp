@@ -40,7 +40,7 @@ export function SubscribeButton() {
         disabled={isLoading}
         className="btn-primary w-full sm:w-auto"
       >
-        {isLoading ? "接続中..." : "月980円プランに登録する"}
+        {isLoading ? "接続中..." : "月480円プランに登録する"}
       </button>
       {errorMessage ? <p className="alert-message">{errorMessage}</p> : null}
     </div>

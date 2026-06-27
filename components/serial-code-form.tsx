@@ -63,7 +63,7 @@ export function SerialCodeForm({ compact = false, onUnlocked }: SerialCodeFormPr
   if (mounted && isUnlocked) {
     const badgeLabel =
       getUsageBadgeState().mode === "subscription"
-        ? "月980円プラン有効"
+        ? "月480円プラン有効"
         : "永久利用プラン有効";
 
     return (

@@ -35,7 +35,7 @@ export function UsageBadge({
   }
 
   if (state.mode === "subscription") {
-    return <span className="usage-badge-lifetime">月980円プラン有効</span>;
+    return <span className="usage-badge-lifetime">月480円プラン有効</span>;
   }
 
   if (state.mode === "exhausted") {

@@ -1,7 +1,7 @@
 export const FREE_USAGE_LIMIT = 3;
 export const USAGE_COUNT_STORAGE_KEY = "report-ai-usage-count";
 export const USAGE_LIMIT_MESSAGE =
-  "無料利用は終了しました。月980円プランに登録してください。";
+  "無料利用は終了しました。月480円プランに登録してください。";
 
 function readUsageCount(): number {
   if (typeof window === "undefined") return 0;

@@ -14,7 +14,7 @@ const SITE = {
 
 const PRICING = {
   freeTrial: "無料3回",
-  monthlyPrice: "980円/月",
+  monthlyPrice: "480円/月",
   freeNote: "クレジットカード不要",
   paidNote: "回数無制限・全機能利用可能",
 } as const;

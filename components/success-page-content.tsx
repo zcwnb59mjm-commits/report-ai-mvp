@@ -81,7 +81,7 @@ export function SuccessPageContent() {
             <p className="page-eyebrow">登録完了</p>
             <h1 className="page-title">ご登録ありがとうございます</h1>
             <p className="page-description">
-              月980円プランが有効になりました。レポート作成を続けられます。
+              月480円プランが有効になりました。レポート作成を続けられます。
             </p>
             <div className="mt-12 flex justify-center sm:justify-start">
               <Link href="/generate" className="btn-primary">
