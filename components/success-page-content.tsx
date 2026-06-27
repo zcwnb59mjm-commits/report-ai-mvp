@@ -10,6 +10,7 @@ import {
   activateCheckoutSessionWithRetry,
   storePendingCheckoutSessionId,
 } from "@/lib/access/activate-checkout-session";
+import { MONTHLY_PLAN_SUCCESS_MESSAGE } from "@/lib/pricing";
 import { syncLoggedInUserFromClientState } from "@/lib/user-access/client-access";
 
 const SITE_NAME = "ReportAI";
@@ -92,7 +93,7 @@ export function SuccessPageContent() {
             <p className="page-eyebrow">登録完了</p>
             <h1 className="page-title">ご登録ありがとうございます</h1>
             <p className="page-description">
-              月480円プランが有効になりました。レポート作成を続けられます。
+              {MONTHLY_PLAN_SUCCESS_MESSAGE}
             </p>
             <div className="mt-12 flex justify-center sm:justify-start">
               <Link href="/generate" className="btn-primary">

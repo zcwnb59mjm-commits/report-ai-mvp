@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AuthButton } from "@/components/auth-button";
 import { SerialCodeSection } from "@/components/serial-code-section";
+import { MONTHLY_PLAN_PRICE_LABEL } from "@/lib/pricing";
 
 const SITE = {
   name: "ReportAI",
@@ -15,7 +16,7 @@ const SITE = {
 
 const PRICING = {
   freeTrial: "無料3回",
-  monthlyPrice: "480円/月",
+  monthlyPrice: MONTHLY_PLAN_PRICE_LABEL,
   freeNote: "クレジットカード不要",
   paidNote: "回数無制限・全機能利用可能",
 } as const;

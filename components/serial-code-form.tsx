@@ -14,11 +14,8 @@ export function SerialCodeForm({ compact = false, onUnlocked }: SerialCodeFormPr
   const [serialCode, setSerialCode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(false);
 
   useEffect(() => {
-    const state = getUsageBadgeState();
-    setIsUnlocked(state.mode === "lifetime" || state.mode === "subscription");
     setMounted(true);
   }, []);
 
@@ -46,7 +43,6 @@ export function SerialCodeForm({ compact = false, onUnlocked }: SerialCodeFormPr
       }
 
       setLifetimeUnlocked();
-      setIsUnlocked(true);
       setSerialCode("");
       onUnlocked?.();
     } catch (error) {
@@ -60,17 +56,12 @@ export function SerialCodeForm({ compact = false, onUnlocked }: SerialCodeFormPr
     }
   }
 
-  if (mounted && isUnlocked) {
-    const badgeLabel =
-      getUsageBadgeState().mode === "subscription"
-        ? "月480円プラン有効"
-        : "永久利用プラン有効";
+  if (mounted) {
+    const state = getUsageBadgeState();
 
-    return (
-      <div className={compact ? "text-center sm:text-left" : undefined}>
-        <span className="usage-badge-lifetime">{badgeLabel}</span>
-      </div>
-    );
+    if (state.mode === "lifetime" || state.mode === "subscription") {
+      return null;
+    }
   }
 
   return (

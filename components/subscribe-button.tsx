@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { MONTHLY_PLAN_SUBSCRIBE_LABEL } from "@/lib/pricing";
+
 export function SubscribeButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function SubscribeButton() {
         disabled={isLoading}
         className="btn-primary w-full sm:w-auto"
       >
-        {isLoading ? "接続中..." : "月480円プランに登録する"}
+        {isLoading ? "接続中..." : MONTHLY_PLAN_SUBSCRIBE_LABEL}
       </button>
       {errorMessage ? <p className="alert-message">{errorMessage}</p> : null}
     </div>

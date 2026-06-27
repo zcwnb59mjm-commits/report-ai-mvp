@@ -1,8 +1,10 @@
-import { SubscribeButton } from "@/components/subscribe-button";
 import { RestoreSubscriptionForm } from "@/components/restore-subscription-form";
-import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
-
+import { SubscribeButton } from "@/components/subscribe-button";
 import type { UsageBadgeState } from "@/lib/access";
+import {
+  MONTHLY_PLAN_ACTIVE_LABEL,
+  MONTHLY_PLAN_REGISTER_MESSAGE,
+} from "@/lib/pricing";
 
 type UsageBadgeProps = {
   mounted: boolean;
@@ -35,14 +37,14 @@ export function UsageBadge({
   }
 
   if (state.mode === "subscription") {
-    return <span className="usage-badge-lifetime">月480円プラン有効</span>;
+    return <span className="usage-badge-lifetime">{MONTHLY_PLAN_ACTIVE_LABEL}</span>;
   }
 
   if (state.mode === "exhausted") {
     return (
       <div className="space-y-4">
         <span className="usage-badge-exhausted">無料利用 0 回</span>
-        <p className="alert-message">{USAGE_LIMIT_MESSAGE}</p>
+        <p className="alert-message">{MONTHLY_PLAN_REGISTER_MESSAGE}</p>
         <SubscribeButton />
         <RestoreSubscriptionForm
           compact
