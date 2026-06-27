@@ -1,4 +1,6 @@
-import { getLocalAccessGrants } from "./lifetime-storage";
+import { getLocalAccessGrants } from "./local-access-grants";
+import { isLifetimeUnlocked } from "./lifetime-storage";
+import { isSubscriptionActive } from "./subscription-storage";
 import type { AccessEntitlement, UsageBadgeState } from "./types";
 import {
   canUseFreeGeneration,
@@ -27,8 +29,12 @@ export function recordGenerationUse(): void {
 }
 
 export function getUsageBadgeState(): UsageBadgeState {
-  if (hasUnlimitedGenerationAccess()) {
+  if (isLifetimeUnlocked()) {
     return { mode: "lifetime" };
+  }
+
+  if (isSubscriptionActive()) {
+    return { mode: "subscription" };
   }
 
   const remaining = getRemainingUses();

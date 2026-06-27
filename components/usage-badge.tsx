@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { SubscribeButton } from "@/components/subscribe-button";
+import { RestoreSubscriptionForm } from "@/components/restore-subscription-form";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
 
 import type { UsageBadgeState } from "@/lib/access";
@@ -8,6 +7,7 @@ import type { UsageBadgeState } from "@/lib/access";
 type UsageBadgeProps = {
   mounted: boolean;
   state: UsageBadgeState | null;
+  onSubscriptionRestored?: () => void;
 };
 
 function UsageBadgePlaceholder() {
@@ -19,7 +19,11 @@ function UsageBadgePlaceholder() {
   );
 }
 
-export function UsageBadge({ mounted, state }: UsageBadgeProps) {
+export function UsageBadge({
+  mounted,
+  state,
+  onSubscriptionRestored,
+}: UsageBadgeProps) {
   if (!mounted) {
     return <UsageBadgePlaceholder />;
   }
@@ -30,12 +34,20 @@ export function UsageBadge({ mounted, state }: UsageBadgeProps) {
     return <span className="usage-badge-lifetime">永久利用プラン有効</span>;
   }
 
+  if (state.mode === "subscription") {
+    return <span className="usage-badge-lifetime">月980円プラン有効</span>;
+  }
+
   if (state.mode === "exhausted") {
     return (
       <div className="space-y-4">
         <span className="usage-badge-exhausted">無料利用 0 回</span>
         <p className="alert-message">{USAGE_LIMIT_MESSAGE}</p>
         <SubscribeButton />
+        <RestoreSubscriptionForm
+          compact
+          onRestored={onSubscriptionRestored}
+        />
       </div>
     );
   }

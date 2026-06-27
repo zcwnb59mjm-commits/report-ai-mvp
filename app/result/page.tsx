@@ -245,7 +245,11 @@ export default function ResultPage() {
               構成を確認し、本文を生成できます。
             </p>
           </div>
-          <UsageBadge mounted={mounted} state={usageState} />
+          <UsageBadge
+            mounted={mounted}
+            state={usageState}
+            onSubscriptionRestored={refreshUsageState}
+          />
           <SerialCodeForm compact onUnlocked={refreshUsageState} />
         </div>
 

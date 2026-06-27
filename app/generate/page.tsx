@@ -118,7 +118,11 @@ export default function GeneratePage() {
               条件を入力して「レポートを作成」を押すと、AIが構成案を提案します。
             </p>
           </div>
-          <UsageBadge mounted={mounted} state={usageState} />
+          <UsageBadge
+            mounted={mounted}
+            state={usageState}
+            onSubscriptionRestored={refreshUsageState}
+          />
           <SerialCodeForm compact onUnlocked={refreshUsageState} />
         </div>
 

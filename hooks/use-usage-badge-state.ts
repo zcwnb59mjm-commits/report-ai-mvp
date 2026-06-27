@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { getUsageBadgeState, type UsageBadgeState } from "@/lib/access";
+import { activatePendingCheckoutSession } from "@/lib/access/activate-checkout-session";
+import {
+  getUsageBadgeState,
+  isLifetimeUnlocked,
+  type UsageBadgeState,
+} from "@/lib/access";
+import { syncSubscriptionWithStripe } from "@/lib/access/sync-subscription-client";
 
 export function useUsageBadgeState() {
   const [mounted, setMounted] = useState(false);
@@ -13,8 +19,25 @@ export function useUsageBadgeState() {
   }, []);
 
   useEffect(() => {
-    refreshUsageState();
-    setMounted(true);
+    let cancelled = false;
+
+    async function initializeUsageState() {
+      if (!isLifetimeUnlocked()) {
+        await activatePendingCheckoutSession();
+        await syncSubscriptionWithStripe();
+      }
+
+      if (cancelled) return;
+
+      refreshUsageState();
+      setMounted(true);
+    }
+
+    void initializeUsageState();
+
+    return () => {
+      cancelled = true;
+    };
   }, [refreshUsageState]);
 
   return { mounted, usageState, refreshUsageState };
