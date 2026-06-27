@@ -7,11 +7,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { SerialCodeForm } from "@/components/serial-code-form";
 import { UsageBadge } from "@/components/usage-badge";
-import {
-  canGenerateReport,
-  getUsageBadgeState,
-  recordGenerationUse,
-} from "@/lib/access";
+import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
+import { canGenerateReport, recordGenerationUse } from "@/lib/access";
 import {
   getReportLevelLabel,
   getWritingStyleLabel,
@@ -74,15 +71,9 @@ export default function ResultPage() {
   const [copyLabel, setCopyLabel] = useState("コピー");
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [usageState, setUsageState] = useState<ReturnType<
-    typeof getUsageBadgeState
-  > | null>(null);
+  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
 
-  useEffect(() => {
-    setUsageState(getUsageBadgeState());
-  }, []);
-
-  const isLimitReached = usageState?.mode === "exhausted";
+  const isLimitReached = mounted && usageState?.mode === "exhausted";
   const isExporting = isDownloadingDocx || isDownloadingPdf;
 
   useEffect(() => {
@@ -124,7 +115,7 @@ export default function ResultPage() {
 
     if (!canGenerateReport()) {
       setBodyError(USAGE_LIMIT_MESSAGE);
-      setUsageState(getUsageBadgeState());
+      refreshUsageState();
       return;
     }
 
@@ -161,7 +152,7 @@ export default function ResultPage() {
       }
 
       recordGenerationUse();
-      setUsageState(getUsageBadgeState());
+      refreshUsageState();
       persistResult({ ...result, body: data.body });
     } catch (error) {
       setBodyError(
@@ -254,11 +245,8 @@ export default function ResultPage() {
               構成を確認し、本文を生成できます。
             </p>
           </div>
-          <UsageBadge state={usageState} />
-          <SerialCodeForm
-            compact
-            onUnlocked={() => setUsageState(getUsageBadgeState())}
-          />
+          <UsageBadge mounted={mounted} state={usageState} />
+          <SerialCodeForm compact onUnlocked={refreshUsageState} />
         </div>
 
         <div className="mt-12 space-y-8">
@@ -319,7 +307,7 @@ export default function ResultPage() {
                 <button
                   type="button"
                   onClick={handleGenerateBody}
-                  disabled={isGeneratingBody || isLimitReached}
+                  disabled={isGeneratingBody || !mounted || isLimitReached}
                   className="btn-primary"
                 >
                   この構成から本文を生成
@@ -364,7 +352,7 @@ export default function ResultPage() {
                 <button
                   type="button"
                   onClick={handleGenerateBody}
-                  disabled={isGeneratingBody || isLimitReached}
+                  disabled={isGeneratingBody || !mounted || isLimitReached}
                   className="btn-secondary-lg"
                 >
                   本文を再生成

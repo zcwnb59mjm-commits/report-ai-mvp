@@ -1,11 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
-import {
-  getUsageBadgeState,
-  setLifetimeUnlocked,
-} from "@/lib/access";
+import { getUsageBadgeState, setLifetimeUnlocked } from "@/lib/access";
 
 type SerialCodeFormProps = {
   compact?: boolean;
@@ -13,12 +10,16 @@ type SerialCodeFormProps = {
 };
 
 export function SerialCodeForm({ compact = false, onUnlocked }: SerialCodeFormProps) {
+  const [mounted, setMounted] = useState(false);
   const [serialCode, setSerialCode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(
-    () => getUsageBadgeState().mode === "lifetime",
-  );
+  const [isUnlocked, setIsUnlocked] = useState(false);
+
+  useEffect(() => {
+    setIsUnlocked(getUsageBadgeState().mode === "lifetime");
+    setMounted(true);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,7 +59,7 @@ export function SerialCodeForm({ compact = false, onUnlocked }: SerialCodeFormPr
     }
   }
 
-  if (isUnlocked) {
+  if (mounted && isUnlocked) {
     return (
       <div className={compact ? "text-center sm:text-left" : undefined}>
         <span className="usage-badge-lifetime">永久利用プラン有効</span>

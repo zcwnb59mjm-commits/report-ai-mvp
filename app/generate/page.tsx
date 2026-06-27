@@ -2,16 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { SerialCodeForm } from "@/components/serial-code-form";
 import { UsageBadge } from "@/components/usage-badge";
-import {
-  canGenerateReport,
-  getUsageBadgeState,
-  recordGenerationUse,
-} from "@/lib/access";
+import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
+import { canGenerateReport, recordGenerationUse } from "@/lib/access";
 import {
   REPORT_RESULT_STORAGE_KEY,
   REPORT_LEVELS,
@@ -27,15 +24,9 @@ export default function GeneratePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [usageState, setUsageState] = useState<ReturnType<
-    typeof getUsageBadgeState
-  > | null>(null);
+  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
 
-  useEffect(() => {
-    setUsageState(getUsageBadgeState());
-  }, []);
-
-  const isLimitReached = usageState?.mode === "exhausted";
+  const isLimitReached = mounted && usageState?.mode === "exhausted";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,7 +34,7 @@ export default function GeneratePage() {
 
     if (!canGenerateReport()) {
       setErrorMessage(USAGE_LIMIT_MESSAGE);
-      setUsageState(getUsageBadgeState());
+      refreshUsageState();
       return;
     }
 
@@ -93,7 +84,7 @@ export default function GeneratePage() {
       }
 
       recordGenerationUse();
-      setUsageState(getUsageBadgeState());
+      refreshUsageState();
       sessionStorage.setItem(REPORT_RESULT_STORAGE_KEY, JSON.stringify(data));
       router.push("/result");
     } catch (error) {
@@ -127,11 +118,8 @@ export default function GeneratePage() {
               条件を入力して「レポートを作成」を押すと、AIが構成案を提案します。
             </p>
           </div>
-          <UsageBadge state={usageState} />
-          <SerialCodeForm
-            compact
-            onUnlocked={() => setUsageState(getUsageBadgeState())}
-          />
+          <UsageBadge mounted={mounted} state={usageState} />
+          <SerialCodeForm compact onUnlocked={refreshUsageState} />
         </div>
 
         <form onSubmit={handleSubmit} className="card mt-12 space-y-8">
@@ -289,7 +277,7 @@ export default function GeneratePage() {
           <div className="flex justify-center pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || isLimitReached}
+              disabled={isSubmitting || !mounted || isLimitReached}
               className="btn-primary"
             >
               レポートを作成

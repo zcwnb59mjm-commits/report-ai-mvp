@@ -1,11 +1,26 @@
-import type { UsageBadgeState } from "@/lib/access";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
 
+import type { UsageBadgeState } from "@/lib/access";
+
 type UsageBadgeProps = {
+  mounted: boolean;
   state: UsageBadgeState | null;
 };
 
-export function UsageBadge({ state }: UsageBadgeProps) {
+function UsageBadgePlaceholder() {
+  return (
+    <span
+      className="inline-block h-[36px] w-[168px] rounded-full bg-neutral-100"
+      aria-hidden="true"
+    />
+  );
+}
+
+export function UsageBadge({ mounted, state }: UsageBadgeProps) {
+  if (!mounted) {
+    return <UsageBadgePlaceholder />;
+  }
+
   if (state === null) return null;
 
   if (state.mode === "lifetime") {
