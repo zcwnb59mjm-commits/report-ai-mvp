@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getLifetimeSerialCode } from "@/lib/lifetime-serial-code";
-import { verifySerialCode } from "@/lib/verify-serial-code";
+import { getLifetimeSerialCodes } from "@/lib/lifetime-serial-code";
+import { isValidSerialCode } from "@/lib/verify-serial-code";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -9,9 +9,9 @@ export const runtime = "nodejs";
 const INVALID_SERIAL_MESSAGE = "シリアルコードが正しくありません";
 
 export async function POST(request: Request) {
-  const configuredCode = getLifetimeSerialCode();
+  const validCodes = getLifetimeSerialCodes();
 
-  if (!configuredCode) {
+  if (validCodes.length === 0) {
     return NextResponse.json(
       { valid: false, error: "シリアルコード認証が設定されていません。" },
       { status: 503 },
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const valid = verifySerialCode(serialCode, configuredCode);
+  const valid = isValidSerialCode(serialCode, validCodes);
 
   if (!valid) {
     return NextResponse.json(
