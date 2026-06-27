@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+import { AccessStatus } from "@/components/access-status";
 import { LoadingOverlay } from "@/components/loading-overlay";
-import { SerialCodeForm } from "@/components/serial-code-form";
 import { SiteHeader } from "@/components/site-header";
-import { UsageBadge } from "@/components/usage-badge";
 import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
+import { canGenerateReport, recordGenerationUse } from "@/lib/access";
 import {
   REPORT_RESULT_STORAGE_KEY,
   REPORT_LEVELS,
@@ -16,17 +16,12 @@ import {
   type ReportGenerateResult,
 } from "@/lib/report";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
-import {
-  canGenerateReportForCurrentUser,
-  recordGenerationUseForCurrentUser,
-} from "@/lib/user-access/generation-client";
 
 export default function GeneratePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { mounted, usageState, refreshUsageState, isLoggedIn } =
-    useUsageBadgeState();
+  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
 
   const isLimitReached = mounted && usageState?.mode === "exhausted";
 
@@ -34,7 +29,7 @@ export default function GeneratePage() {
     event.preventDefault();
     setErrorMessage(null);
 
-    if (!(await canGenerateReportForCurrentUser(isLoggedIn))) {
+    if (!canGenerateReport()) {
       setErrorMessage(USAGE_LIMIT_MESSAGE);
       await refreshUsageState();
       return;
@@ -85,7 +80,7 @@ export default function GeneratePage() {
         throw new Error(data.error ?? "レポート構成の生成に失敗しました。");
       }
 
-      await recordGenerationUseForCurrentUser(isLoggedIn);
+      recordGenerationUse();
       await refreshUsageState();
       sessionStorage.setItem(REPORT_RESULT_STORAGE_KEY, JSON.stringify(data));
       router.push("/result");
@@ -114,16 +109,10 @@ export default function GeneratePage() {
               条件を入力して「レポートを作成」を押すと、AIが構成案を提案します。
             </p>
           </div>
-          <UsageBadge
+          <AccessStatus
             mounted={mounted}
             state={usageState}
-            onSubscriptionRestored={() => {
-              void refreshUsageState();
-            }}
-          />
-          <SerialCodeForm
-            compact
-            onUnlocked={() => {
+            onRefresh={() => {
               void refreshUsageState();
             }}
           />

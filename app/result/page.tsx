@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { AccessStatus } from "@/components/access-status";
 import { AuthButton } from "@/components/auth-button";
 import { LoadingOverlay } from "@/components/loading-overlay";
-import { SerialCodeForm } from "@/components/serial-code-form";
-import { UsageBadge } from "@/components/usage-badge";
 import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
+import { canGenerateReport, recordGenerationUse } from "@/lib/access";
 import {
   getReportLevelLabel,
   getWritingStyleLabel,
@@ -21,10 +21,6 @@ import {
 import { downloadReportDocx } from "@/lib/export-report-docx";
 import { downloadReportPdf } from "@/lib/export-report-pdf";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
-import {
-  canGenerateReportForCurrentUser,
-  recordGenerationUseForCurrentUser,
-} from "@/lib/user-access/generation-client";
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return <h2 className="section-heading">{children}</h2>;
@@ -72,8 +68,7 @@ export default function ResultPage() {
   const [copyLabel, setCopyLabel] = useState("コピー");
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const { mounted, usageState, refreshUsageState, isLoggedIn } =
-    useUsageBadgeState();
+  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
 
   const isLimitReached = mounted && usageState?.mode === "exhausted";
   const isExporting = isDownloadingDocx || isDownloadingPdf;
@@ -115,7 +110,7 @@ export default function ResultPage() {
 
     setBodyError(null);
 
-    if (!(await canGenerateReportForCurrentUser(isLoggedIn))) {
+    if (!canGenerateReport()) {
       setBodyError(USAGE_LIMIT_MESSAGE);
       await refreshUsageState();
       return;
@@ -153,7 +148,7 @@ export default function ResultPage() {
         throw new Error("本文の生成に失敗しました。");
       }
 
-      await recordGenerationUseForCurrentUser(isLoggedIn);
+      recordGenerationUse();
       await refreshUsageState();
       persistResult({ ...result, body: data.body });
     } catch (error) {
@@ -250,16 +245,10 @@ export default function ResultPage() {
               構成を確認し、本文を生成できます。
             </p>
           </div>
-          <UsageBadge
+          <AccessStatus
             mounted={mounted}
             state={usageState}
-            onSubscriptionRestored={() => {
-              void refreshUsageState();
-            }}
-          />
-          <SerialCodeForm
-            compact
-            onUnlocked={() => {
+            onRefresh={() => {
               void refreshUsageState();
             }}
           />
