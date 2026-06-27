@@ -77,25 +77,6 @@ export async function recordServerGenerationUse(userId: string): Promise<void> {
   });
 }
 
-export async function mergeAnonymousUsageIntoUser(
-  userId: string,
-  localUsageCount: number,
-): Promise<void> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { usageCount: true },
-  });
-
-  if (!user) return;
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      usageCount: Math.max(user.usageCount, localUsageCount),
-    },
-  });
-}
-
 export async function setUserLifetimeUnlocked(userId: string): Promise<void> {
   await prisma.user.update({
     where: { id: userId },

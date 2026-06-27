@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { mergeAnonymousUsageIntoUser } from "@/lib/anonymous-usage/server-access";
+import { isValidDeviceId } from "@/lib/device-id/device-id-storage";
 import { linkStripeSubscriptionToUserById } from "@/lib/user-access/link-stripe-subscription";
 import {
-  mergeAnonymousUsageIntoUser,
   setUserLifetimeUnlocked,
 } from "@/lib/user-access/server-access";
 
@@ -32,14 +33,13 @@ export async function POST(request: Request) {
     typeof body.subscriptionId === "string" ? body.subscriptionId.trim() : "";
   const customerEmail =
     typeof body.customerEmail === "string" ? body.customerEmail.trim() : "";
-  const localUsageCount =
-    typeof body.localUsageCount === "number" && Number.isFinite(body.localUsageCount)
-      ? Math.max(0, Math.floor(body.localUsageCount))
-      : 0;
+  const deviceId =
+    typeof body.deviceId === "string" ? body.deviceId.trim() : "";
   const lifetimeUnlocked = body.lifetimeUnlocked === true;
-  const subscriptionActive = body.subscriptionActive === true;
 
-  await mergeAnonymousUsageIntoUser(session.user.id, localUsageCount);
+  if (isValidDeviceId(deviceId)) {
+    await mergeAnonymousUsageIntoUser(session.user.id, deviceId);
+  }
 
   if (lifetimeUnlocked) {
     await setUserLifetimeUnlocked(session.user.id);

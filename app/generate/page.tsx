@@ -7,7 +7,7 @@ import { AccessStatus } from "@/components/access-status";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { SiteHeader } from "@/components/site-header";
 import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
-import { canGenerateReport, recordGenerationUse } from "@/lib/access";
+import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
 import {
   REPORT_RESULT_STORAGE_KEY,
   REPORT_LEVELS,
@@ -21,15 +21,16 @@ export default function GeneratePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
+  const { mounted, usageState, canGenerate, refreshUsageState } =
+    useUsageBadgeState();
 
-  const isLimitReached = mounted && usageState?.mode === "exhausted";
+  const isLimitReached = mounted && !canGenerate;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
 
-    if (!canGenerateReport()) {
+    if (!canGenerate) {
       setErrorMessage(USAGE_LIMIT_MESSAGE);
       await refreshUsageState();
       return;
@@ -60,6 +61,7 @@ export default function GeneratePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          deviceId: getOrCreateDeviceId(),
           theme,
           wordCount,
           courseName,
@@ -80,7 +82,6 @@ export default function GeneratePage() {
         throw new Error(data.error ?? "レポート構成の生成に失敗しました。");
       }
 
-      recordGenerationUse();
       await refreshUsageState();
       sessionStorage.setItem(REPORT_RESULT_STORAGE_KEY, JSON.stringify(data));
       router.push("/result");

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { setAnonymousLifetimeUnlocked } from "@/lib/anonymous-usage/server-access";
+import { isValidDeviceId } from "@/lib/device-id/device-id-storage";
 import { getLifetimeSerialCodes } from "@/lib/lifetime-serial-code";
 import { setUserLifetimeUnlocked } from "@/lib/user-access/server-access";
 import { isValidSerialCode } from "@/lib/verify-serial-code";
@@ -33,6 +35,8 @@ export async function POST(request: Request) {
 
   const serialCode =
     typeof body.serialCode === "string" ? body.serialCode.trim() : "";
+  const deviceId =
+    typeof body.deviceId === "string" ? body.deviceId.trim() : "";
 
   if (!serialCode) {
     return NextResponse.json(
@@ -54,6 +58,10 @@ export async function POST(request: Request) {
 
   if (session?.user?.id) {
     await setUserLifetimeUnlocked(session.user.id);
+  }
+
+  if (isValidDeviceId(deviceId)) {
+    await setAnonymousLifetimeUnlocked(deviceId);
   }
 
   return NextResponse.json({ valid: true });

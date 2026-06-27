@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 
 import { setLifetimeUnlocked } from "@/lib/access";
+import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
 
 type SerialCodeFormProps = {
   compact?: boolean;
@@ -25,7 +26,10 @@ export function SerialCodeForm({ compact = false, onUnlocked }: SerialCodeFormPr
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ serialCode }),
+        body: JSON.stringify({
+          serialCode,
+          deviceId: getOrCreateDeviceId(),
+        }),
       });
 
       const data = (await response.json()) as {

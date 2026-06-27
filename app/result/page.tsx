@@ -7,7 +7,7 @@ import { AccessStatus } from "@/components/access-status";
 import { AuthButton } from "@/components/auth-button";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
-import { canGenerateReport, recordGenerationUse } from "@/lib/access";
+import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
 import {
   getReportLevelLabel,
   getWritingStyleLabel,
@@ -68,9 +68,10 @@ export default function ResultPage() {
   const [copyLabel, setCopyLabel] = useState("コピー");
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
+  const { mounted, usageState, canGenerate, refreshUsageState } =
+    useUsageBadgeState();
 
-  const isLimitReached = mounted && usageState?.mode === "exhausted";
+  const isLimitReached = mounted && !canGenerate;
   const isExporting = isDownloadingDocx || isDownloadingPdf;
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export default function ResultPage() {
 
     setBodyError(null);
 
-    if (!canGenerateReport()) {
+    if (!canGenerate) {
       setBodyError(USAGE_LIMIT_MESSAGE);
       await refreshUsageState();
       return;
@@ -125,6 +126,7 @@ export default function ResultPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          deviceId: getOrCreateDeviceId(),
           theme: result.theme,
           wordCount: result.wordCount,
           courseName: result.courseName,
@@ -148,7 +150,6 @@ export default function ResultPage() {
         throw new Error("本文の生成に失敗しました。");
       }
 
-      recordGenerationUse();
       await refreshUsageState();
       persistResult({ ...result, body: data.body });
     } catch (error) {

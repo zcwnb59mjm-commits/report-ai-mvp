@@ -1,36 +1,32 @@
 import type { UsageBadgeState } from "@/lib/access/types";
-import {
-  canGenerateReport,
-  getUsageBadgeState,
-  recordGenerationUse,
-} from "@/lib/access/generation-access";
-import {
-  canLoggedInUserGenerate,
-  recordLoggedInGenerationUse,
-} from "@/lib/user-access/client-access";
+import { hasUnlimitedGenerationAccess } from "@/lib/access/generation-access";
+import { fetchAnonymousAccessState } from "@/lib/anonymous-usage/client-access";
+import { fetchLoggedInAccessState } from "@/lib/user-access/client-access";
 
 export async function canGenerateReportForCurrentUser(
   isLoggedIn: boolean,
 ): Promise<boolean> {
   if (isLoggedIn) {
-    const canGenerate = await canLoggedInUserGenerate();
-    return canGenerate ?? false;
+    const canGenerate = await fetchLoggedInAccessState();
+    if (canGenerate.isLoggedIn) {
+      return canGenerate.canGenerate;
+    }
   }
 
-  return canGenerateReport();
-}
+  if (hasUnlimitedGenerationAccess()) {
+    return true;
+  }
 
-export function getAnonymousUsageBadgeState(): UsageBadgeState {
-  return getUsageBadgeState();
+  const access = await fetchAnonymousAccessState();
+  return access?.canGenerate ?? false;
 }
 
 export async function recordGenerationUseForCurrentUser(
-  isLoggedIn: boolean,
+  _isLoggedIn: boolean,
 ): Promise<void> {
-  if (isLoggedIn) {
-    await recordLoggedInGenerationUse();
-    return;
-  }
+  // Usage is recorded server-side when generation APIs succeed.
+}
 
-  recordGenerationUse();
+export function getAnonymousUsageBadgeState(): UsageBadgeState {
+  return { mode: "exhausted" };
 }

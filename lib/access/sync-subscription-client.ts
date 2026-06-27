@@ -4,6 +4,7 @@ import {
   getSubscriptionSyncHints,
   setSubscriptionActive,
 } from "./subscription-storage";
+import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
 
 type SyncResponse = {
   valid?: boolean;
@@ -32,6 +33,7 @@ export async function syncSubscriptionWithStripe(): Promise<boolean> {
       body: JSON.stringify({
         subscriptionId: subscriptionId ?? undefined,
         email: email ?? undefined,
+        deviceId: getOrCreateDeviceId(),
       }),
     });
 
@@ -64,7 +66,7 @@ export async function restoreSubscriptionByEmail(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, deviceId: getOrCreateDeviceId() }),
     });
 
     const data = (await response.json()) as SyncResponse;

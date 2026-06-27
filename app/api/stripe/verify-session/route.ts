@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { setAnonymousSubscriptionActive } from "@/lib/anonymous-usage/server-access";
+import { isValidDeviceId } from "@/lib/device-id/device-id-storage";
 import { toSubscriptionRecord } from "@/lib/subscription/record-checkout";
 import { syncSubscriptionWithStripe } from "@/lib/subscription/sync-subscription";
 import { createStripeClient } from "@/lib/stripe/create-stripe-client";
@@ -23,6 +25,8 @@ export async function POST(request: Request) {
 
   const sessionId =
     typeof body.sessionId === "string" ? body.sessionId.trim() : "";
+  const deviceId =
+    typeof body.deviceId === "string" ? body.deviceId.trim() : "";
 
   if (!sessionId) {
     return NextResponse.json(
@@ -95,6 +99,10 @@ export async function POST(request: Request) {
           });
         }
 
+        if (isValidDeviceId(deviceId)) {
+          await setAnonymousSubscriptionActive(deviceId, true);
+        }
+
         return NextResponse.json(synced);
       }
     }
@@ -107,6 +115,10 @@ export async function POST(request: Request) {
         subscriptionId,
         customerId: record.customerId,
       });
+    }
+
+    if (isValidDeviceId(deviceId)) {
+      await setAnonymousSubscriptionActive(deviceId, true);
     }
 
     return NextResponse.json({

@@ -56,3 +56,16 @@ model VerificationToken {
 
   @@id([identifier, token])
 }
+
+model AnonymousUsage {
+  deviceId           String   @id
+  usageCount         Int      @default(0)
+  userAgent          String?
+  ipHash             String?
+  lifetimeUnlocked   Boolean  @default(false)
+  subscriptionActive Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("anonymous_usages")
+}

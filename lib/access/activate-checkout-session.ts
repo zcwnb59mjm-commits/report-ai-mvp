@@ -1,4 +1,5 @@
 import { setSubscriptionActive } from "./subscription-storage";
+import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
 
 export const PENDING_CHECKOUT_SESSION_STORAGE_KEY = "pendingCheckoutSessionId";
 
@@ -46,7 +47,10 @@ export async function activateCheckoutSession(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ sessionId }),
+      body: JSON.stringify({
+        sessionId,
+        deviceId: getOrCreateDeviceId(),
+      }),
     });
 
     const data = (await response.json()) as VerifyResponse;

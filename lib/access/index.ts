@@ -41,9 +41,4 @@ export {
 
 export { getLocalAccessGrants } from "./local-access-grants";
 
-export {
-  canGenerateReport,
-  getUsageBadgeState,
-  hasUnlimitedGenerationAccess,
-  recordGenerationUse,
-} from "./generation-access";
+export { hasUnlimitedGenerationAccess } from "./generation-access";

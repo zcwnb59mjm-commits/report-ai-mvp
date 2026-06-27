@@ -1,20 +1,21 @@
-import { auth } from "@/auth";
 import { isLifetimeUnlocked } from "@/lib/access/lifetime-storage";
 import {
   getStoredCustomerEmail,
   getStoredSubscriptionId,
   isSubscriptionActive,
 } from "@/lib/access/subscription-storage";
-import { getUsageCount } from "@/lib/usage-limit";
+import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
 
 export async function syncLoggedInUserFromClientState(): Promise<void> {
+  const deviceId = getOrCreateDeviceId();
+
   const response = await fetch("/api/user/sync", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      localUsageCount: getUsageCount(),
+      deviceId,
       lifetimeUnlocked: isLifetimeUnlocked(),
       subscriptionId: getStoredSubscriptionId(),
       customerEmail: getStoredCustomerEmail(),
@@ -27,11 +28,14 @@ export async function syncLoggedInUserFromClientState(): Promise<void> {
   }
 }
 
-export async function fetchLoggedInAccessState(): Promise<{
-  isLoggedIn: true;
-  canGenerate: boolean;
-  state: import("@/lib/access/types").UsageBadgeState;
-} | { isLoggedIn: false }> {
+export async function fetchLoggedInAccessState(): Promise<
+  | {
+      isLoggedIn: true;
+      canGenerate: boolean;
+      state: import("@/lib/access/types").UsageBadgeState;
+    }
+  | { isLoggedIn: false }
+> {
   const response = await fetch("/api/user/access");
   const data = (await response.json()) as {
     isLoggedIn?: boolean;

@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const access = await requireGenerationAccess();
+  const access = await requireGenerationAccess(request, body);
 
   if (!access.allowed) {
     return NextResponse.json({ error: access.error }, { status: access.status });
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
       throw new Error("Empty humanized response");
     }
 
-    await recordGenerationAccessUse(access.userId);
+    await recordGenerationAccessUse(access.userId, access.deviceId);
 
     return NextResponse.json({ body: bodyText });
   } catch (error) {

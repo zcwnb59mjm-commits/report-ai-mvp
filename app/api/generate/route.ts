@@ -132,7 +132,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
   }
 
-  const access = await requireGenerationAccess();
+  const access = await requireGenerationAccess(request, body);
 
   if (!access.allowed) {
     return NextResponse.json({ error: access.error }, { status: access.status });
@@ -173,7 +173,7 @@ export async function POST(request: Request) {
       ...reportContent,
     };
 
-    await recordGenerationAccessUse(access.userId);
+    await recordGenerationAccessUse(access.userId, access.deviceId);
 
     return NextResponse.json(result);
   } catch (error) {
