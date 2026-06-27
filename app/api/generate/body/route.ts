@@ -5,7 +5,11 @@ import OpenAI, {
 } from "openai";
 import { NextResponse } from "next/server";
 
+import { getOpenAIApiKey } from "@/lib/openai-api-key";
 import { OUTLINE_SECTIONS, type ReportOutline } from "@/lib/report";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const MODEL = "gpt-5-mini";
 
@@ -123,7 +127,9 @@ function getOpenAIErrorMessage(error: unknown): string {
 }
 
 export async function POST(request: Request) {
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = getOpenAIApiKey();
+
+  if (!apiKey) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY が設定されていません。" },
       { status: 500 },
@@ -151,7 +157,7 @@ export async function POST(request: Request) {
     parsedRequest.data;
 
   const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey,
   });
 
   try {
