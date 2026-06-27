@@ -1,3 +1,6 @@
+import Link from "next/link";
+
+import { SubscribeButton } from "@/components/subscribe-button";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
 
 import type { UsageBadgeState } from "@/lib/access";
@@ -32,6 +35,7 @@ export function UsageBadge({ mounted, state }: UsageBadgeProps) {
       <div className="space-y-4">
         <span className="usage-badge-exhausted">無料利用 0 回</span>
         <p className="alert-message">{USAGE_LIMIT_MESSAGE}</p>
+        <SubscribeButton />
       </div>
     );
   }
