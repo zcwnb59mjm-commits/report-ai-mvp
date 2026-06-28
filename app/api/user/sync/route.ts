@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { mergeAnonymousUsageIntoUser } from "@/lib/anonymous-usage/server-access";
 import { isValidDeviceId } from "@/lib/device-id/device-id-storage";
 import { linkStripeSubscriptionToUserById } from "@/lib/user-access/link-stripe-subscription";
-import {
-  setUserLifetimeUnlocked,
-} from "@/lib/user-access/server-access";
+import { setUserLifetimeUnlocked } from "@/lib/user-access/server-access";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const appUser = await getAppUser();
 
-  if (!session?.user?.id || !session.user.email) {
+  if (!appUser) {
     return NextResponse.json(
       { error: "ログインが必要です。" },
       { status: 401 },
@@ -38,21 +36,21 @@ export async function POST(request: Request) {
   const lifetimeUnlocked = body.lifetimeUnlocked === true;
 
   if (isValidDeviceId(deviceId)) {
-    await mergeAnonymousUsageIntoUser(session.user.id, deviceId);
+    await mergeAnonymousUsageIntoUser(appUser.prismaUser.id, deviceId);
   }
 
   if (lifetimeUnlocked) {
-    await setUserLifetimeUnlocked(session.user.id);
+    await setUserLifetimeUnlocked(appUser.prismaUser.id);
   }
 
   if (body.subscriptionActive === true || subscriptionId) {
-    await linkStripeSubscriptionToUserById(session.user.id, {
-      email: customerEmail || session.user.email,
+    await linkStripeSubscriptionToUserById(appUser.prismaUser.id, {
+      email: customerEmail || appUser.prismaUser.email,
       subscriptionId: subscriptionId || undefined,
     });
   } else {
-    await linkStripeSubscriptionToUserById(session.user.id, {
-      email: customerEmail || session.user.email,
+    await linkStripeSubscriptionToUserById(appUser.prismaUser.id, {
+      email: customerEmail || appUser.prismaUser.email,
     });
   }
 

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useLayoutEffect, useEffect, useState } from "react";
 
 import { RestoreSubscriptionForm } from "@/components/restore-subscription-form";
@@ -11,13 +10,14 @@ import {
   storePendingCheckoutSessionId,
 } from "@/lib/access/activate-checkout-session";
 import { MONTHLY_PLAN_SUCCESS_MESSAGE } from "@/lib/pricing";
+import { useAuthUser } from "@/hooks/use-auth-user";
 import { syncLoggedInUserFromClientState } from "@/lib/user-access/client-access";
 
 const SITE_NAME = "ReportAI";
 
 export function SuccessPageContent() {
   const searchParams = useSearchParams();
-  const { status: authStatus } = useSession();
+  const { loading: authLoading, isAuthenticated } = useAuthUser();
   const sessionId = searchParams.get("session_id");
   const [pageStatus, setPageStatus] = useState<"loading" | "success" | "error">(
     sessionId ? "loading" : "error",
@@ -33,7 +33,7 @@ export function SuccessPageContent() {
   }, [sessionId]);
 
   useEffect(() => {
-    if (!sessionId || authStatus === "loading") return;
+    if (!sessionId || authLoading) return;
 
     const checkoutSessionId = sessionId;
     let cancelled = false;
@@ -44,11 +44,11 @@ export function SuccessPageContent() {
       if (cancelled) return;
 
       if (result.success) {
-        if (authStatus === "authenticated") {
+        if (isAuthenticated) {
           try {
             await syncLoggedInUserFromClientState();
           } catch {
-            // localStorage activation still succeeded
+            // Checkout verification still succeeded.
           }
         }
 
@@ -65,7 +65,7 @@ export function SuccessPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [authStatus, sessionId]);
+  }, [authLoading, isAuthenticated, sessionId]);
 
   return (
     <div className="page-shell">
@@ -95,9 +95,12 @@ export function SuccessPageContent() {
             <p className="page-description">
               {MONTHLY_PLAN_SUCCESS_MESSAGE}
             </p>
-            <div className="mt-12 flex justify-center sm:justify-start">
+            <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-start">
               <Link href="/generate" className="btn-primary">
                 レポートを作成する
+              </Link>
+              <Link href="/mypage" className="btn-secondary px-6 py-3 text-[15px]">
+                マイページへ
               </Link>
             </div>
           </>

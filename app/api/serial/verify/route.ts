@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { setAnonymousLifetimeUnlocked } from "@/lib/anonymous-usage/server-access";
 import { isValidDeviceId } from "@/lib/device-id/device-id-storage";
 import { getLifetimeSerialCodes } from "@/lib/lifetime-serial-code";
@@ -54,10 +54,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = await auth();
+  const appUser = await getAppUser();
 
-  if (session?.user?.id) {
-    await setUserLifetimeUnlocked(session.user.id);
+  if (appUser) {
+    await setUserLifetimeUnlocked(appUser.prismaUser.id);
   }
 
   if (isValidDeviceId(deviceId)) {

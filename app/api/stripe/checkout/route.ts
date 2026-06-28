@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { getAppOrigin } from "@/lib/app-url";
 import { getStripePriceId, getStripeSecretKey } from "@/lib/stripe-config";
 
@@ -13,6 +13,15 @@ function getStripeClient(secretKey: string): Stripe {
 }
 
 export async function POST(request: Request) {
+  const appUser = await getAppUser();
+
+  if (!appUser) {
+    return NextResponse.json(
+      { error: "有料プランのご利用にはログインが必要です。" },
+      { status: 401 },
+    );
+  }
+
   const secretKey = getStripeSecretKey();
   const priceId = getStripePriceId();
 
@@ -31,11 +40,10 @@ export async function POST(request: Request) {
   }
 
   const origin = getAppOrigin(request);
-  const session = await auth();
 
   try {
     const stripe = getStripeClient(secretKey);
-    const checkoutSession = await stripe.checkout.sessions.create({
+    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       line_items: [
         {
@@ -45,9 +53,25 @@ export async function POST(request: Request) {
       ],
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/generate`,
-      customer_email: session?.user?.email ?? undefined,
-      metadata: session?.user?.id ? { userId: session.user.id } : undefined,
-    });
+      client_reference_id: appUser.prismaUser.id,
+      metadata: {
+        userId: appUser.prismaUser.id,
+        supabaseUserId: appUser.supabaseUser.id,
+      },
+      subscription_data: {
+        metadata: {
+          userId: appUser.prismaUser.id,
+        },
+      },
+    };
+
+    if (appUser.prismaUser.stripeCustomerId) {
+      checkoutParams.customer = appUser.prismaUser.stripeCustomerId;
+    } else {
+      checkoutParams.customer_email = appUser.prismaUser.email;
+    }
+
+    const checkoutSession = await stripe.checkout.sessions.create(checkoutParams);
 
     if (!checkoutSession.url) {
       throw new Error("Checkout session URL is missing");

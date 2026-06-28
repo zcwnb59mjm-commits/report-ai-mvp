@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 
 import {
   activatePendingCheckoutSession,
@@ -11,16 +10,17 @@ import {
 import { syncSubscriptionWithStripe } from "@/lib/access/sync-subscription-client";
 import { fetchAnonymousAccessState } from "@/lib/anonymous-usage/client-access";
 import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
+import { useAuthUser } from "@/hooks/use-auth-user";
 import { fetchLoggedInAccessState } from "@/lib/user-access/client-access";
 
 export function useUsageBadgeState() {
-  const { status } = useSession();
+  const { loading: authLoading, isAuthenticated } = useAuthUser();
   const [mounted, setMounted] = useState(false);
   const [usageState, setUsageState] = useState<UsageBadgeState | null>(null);
   const [canGenerate, setCanGenerate] = useState(false);
 
   const refreshUsageState = useCallback(async () => {
-    if (status === "authenticated") {
+    if (isAuthenticated) {
       const access = await fetchLoggedInAccessState();
 
       if (access.isLoggedIn) {
@@ -41,10 +41,10 @@ export function useUsageBadgeState() {
 
     setUsageState({ mode: "exhausted" });
     setCanGenerate(false);
-  }, [status]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    if (status === "loading") {
+    if (authLoading) {
       return;
     }
 
@@ -69,7 +69,7 @@ export function useUsageBadgeState() {
     return () => {
       cancelled = true;
     };
-  }, [refreshUsageState, status]);
+  }, [authLoading, refreshUsageState]);
 
   return { mounted, usageState, canGenerate, refreshUsageState };
 }

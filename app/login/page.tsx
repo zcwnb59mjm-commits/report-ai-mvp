@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
-import { AuthButton } from "@/components/auth-button";
+import { LoginForm } from "@/components/login-form";
 
 const SITE_NAME = "ReportAI";
 
@@ -17,12 +18,22 @@ export default function LoginPage() {
 
       <main className="page-main text-center sm:text-left">
         <p className="page-eyebrow">ログイン</p>
-        <h1 className="page-title">Googleアカウントでログイン</h1>
+        <h1 className="page-title">アカウントにログイン</h1>
         <p className="page-description">
-          ログインすると、購入状態と無料利用回数を端末をまたいで管理できます。
+          有料プランのご利用にはログインが必要です。メール、Google、Apple
+          のいずれかでログインできます。無料利用（端末ごと3回）はログイン不要です。
         </p>
         <div className="mt-10">
-          <AuthButton />
+          <Suspense
+            fallback={
+              <span
+                className="inline-block h-40 w-full rounded-2xl bg-neutral-100"
+                aria-hidden="true"
+              />
+            }
+          >
+            <LoginForm />
+          </Suspense>
         </div>
       </main>
     </div>

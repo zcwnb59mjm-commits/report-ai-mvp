@@ -1,15 +1,27 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { useAuthUser } from "@/hooks/use-auth-user";
+import { createClient } from "@/lib/supabase/client";
 
 type AuthButtonProps = {
   compact?: boolean;
 };
 
 export function AuthButton({ compact = false }: AuthButtonProps) {
-  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { user, loading, isAuthenticated } = useAuthUser();
 
-  if (status === "loading") {
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.refresh();
+    router.push("/");
+  }
+
+  if (loading) {
     return (
       <span
         className="inline-block h-9 w-24 rounded-full bg-neutral-100"
@@ -18,7 +30,7 @@ export function AuthButton({ compact = false }: AuthButtonProps) {
     );
   }
 
-  if (session?.user) {
+  if (isAuthenticated && user) {
     return (
       <div
         className={
@@ -28,11 +40,14 @@ export function AuthButton({ compact = false }: AuthButtonProps) {
         }
       >
         <span className="text-[13px] text-neutral-500">
-          {session.user.name ?? session.user.email}
+          {user.user_metadata?.full_name ?? user.email}
         </span>
+        <Link href="/mypage" className="btn-secondary px-4 py-2 text-[13px]">
+          マイページ
+        </Link>
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={handleSignOut}
           className="btn-secondary px-4 py-2 text-[13px]"
         >
           ログアウト
@@ -42,12 +57,8 @@ export function AuthButton({ compact = false }: AuthButtonProps) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => signIn("google", { callbackUrl: "/generate" })}
-      className="btn-secondary px-4 py-2 text-[13px]"
-    >
-      Googleでログイン
-    </button>
+    <Link href="/login" className="btn-secondary px-4 py-2 text-[13px]">
+      ログイン
+    </Link>
   );
 }

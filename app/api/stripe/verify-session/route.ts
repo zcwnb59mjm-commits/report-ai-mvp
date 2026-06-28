@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { setAnonymousSubscriptionActive } from "@/lib/anonymous-usage/server-access";
 import { isValidDeviceId } from "@/lib/device-id/device-id-storage";
 import { toSubscriptionRecord } from "@/lib/subscription/record-checkout";
@@ -10,6 +10,16 @@ import { linkStripeSubscriptionToUserById } from "@/lib/user-access/link-stripe-
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+function getCheckoutUserId(
+  metadata: Record<string, string> | null,
+  appUserId: string | undefined,
+): string | undefined {
+  const metadataUserId =
+    typeof metadata?.userId === "string" ? metadata.userId.trim() : "";
+
+  return appUserId ?? (metadataUserId || undefined);
+}
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -46,6 +56,8 @@ export async function POST(request: Request) {
 
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const appUser = await getAppUser();
+    const userId = getCheckoutUserId(session.metadata, appUser?.prismaUser.id);
 
     if (session.mode !== "subscription") {
       return NextResponse.json(
@@ -86,16 +98,15 @@ export async function POST(request: Request) {
     if (subscriptionId) {
       const synced = await syncSubscriptionWithStripe({
         subscriptionId,
-        email: record.customerEmail ?? undefined,
+        email: record.customerEmail ?? appUser?.prismaUser.email ?? undefined,
       });
 
       if (synced.valid) {
-        const authSession = await auth();
-
-        if (authSession?.user?.id) {
-          await linkStripeSubscriptionToUserById(authSession.user.id, {
+        if (userId) {
+          await linkStripeSubscriptionToUserById(userId, {
             email: synced.customerEmail ?? record.customerEmail,
             subscriptionId: synced.subscriptionId,
+            customerId: record.customerId,
           });
         }
 
@@ -107,11 +118,9 @@ export async function POST(request: Request) {
       }
     }
 
-    const authSession = await auth();
-
-    if (authSession?.user?.id) {
-      await linkStripeSubscriptionToUserById(authSession.user.id, {
-        email: record.customerEmail,
+    if (userId) {
+      await linkStripeSubscriptionToUserById(userId, {
+        email: record.customerEmail ?? appUser?.prismaUser.email,
         subscriptionId,
         customerId: record.customerId,
       });

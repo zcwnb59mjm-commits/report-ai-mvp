@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 
 import { handleCheckoutSessionCompleted } from "@/lib/stripe/handle-checkout-completed";
 import {
+  handleSubscriptionDeleted,
+  handleSubscriptionUpdated,
+} from "@/lib/stripe/handle-subscription-lifecycle";
+import {
   getStripeSecretKey,
   getStripeWebhookSecret,
 } from "@/lib/stripe-config";
@@ -57,6 +61,16 @@ export async function POST(request: Request) {
     case "checkout.session.completed":
       await handleCheckoutSessionCompleted(
         event.data.object as Stripe.Checkout.Session,
+      );
+      break;
+    case "customer.subscription.updated":
+      await handleSubscriptionUpdated(
+        event.data.object as Stripe.Subscription,
+      );
+      break;
+    case "customer.subscription.deleted":
+      await handleSubscriptionDeleted(
+        event.data.object as Stripe.Subscription,
       );
       break;
     default:

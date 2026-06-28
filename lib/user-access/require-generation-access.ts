@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
 import {
   ensureAnonymousUsage,
@@ -43,10 +43,10 @@ export async function requireGenerationAccess(
     ipHash,
   });
 
-  const session = await auth();
+  const appUser = await getAppUser();
 
-  if (session?.user?.id) {
-    const access = await getServerAccessStateForUser(session.user.id);
+  if (appUser) {
+    const access = await getServerAccessStateForUser(appUser.prismaUser.id);
 
     if (!access.canGenerate) {
       return {
@@ -56,7 +56,7 @@ export async function requireGenerationAccess(
       };
     }
 
-    return { allowed: true, userId: session.user.id, deviceId };
+    return { allowed: true, userId: appUser.prismaUser.id, deviceId };
   }
 
   const access = await getAnonymousAccessState(deviceId);

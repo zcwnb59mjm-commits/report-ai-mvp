@@ -1,27 +1,27 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { getServerAccessStateForUser } from "@/lib/user-access/server-access";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const session = await auth();
+  const appUser = await getAppUser();
 
-  if (!session?.user?.id) {
+  if (!appUser) {
     return NextResponse.json({ isLoggedIn: false });
   }
 
-  const access = await getServerAccessStateForUser(session.user.id);
+  const access = await getServerAccessStateForUser(appUser.prismaUser.id);
 
   return NextResponse.json({
     isLoggedIn: true,
     user: {
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-      image: session.user.image,
+      id: appUser.prismaUser.id,
+      name: appUser.prismaUser.name,
+      email: appUser.prismaUser.email,
+      image: appUser.prismaUser.image,
     },
     ...access,
   });

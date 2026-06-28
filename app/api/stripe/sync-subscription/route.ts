@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { setAnonymousSubscriptionActive } from "@/lib/anonymous-usage/server-access";
 import { isValidDeviceId } from "@/lib/device-id/device-id-storage";
 import { syncSubscriptionWithStripe } from "@/lib/subscription/sync-subscription";
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
   const deviceId =
     typeof body.deviceId === "string" ? body.deviceId.trim() : "";
 
-  const session = await auth();
-  const lookupEmail = email || session?.user?.email || undefined;
+  const appUser = await getAppUser();
+  const lookupEmail = email || appUser?.prismaUser.email || undefined;
 
   const result = await syncSubscriptionWithStripe({
     subscriptionId: subscriptionId || undefined,
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
     return NextResponse.json(result, { status });
   }
 
-  if (session?.user?.id) {
-    await linkStripeSubscriptionToUserById(session.user.id, {
+  if (appUser) {
+    await linkStripeSubscriptionToUserById(appUser.prismaUser.id, {
       email: result.customerEmail ?? lookupEmail,
       subscriptionId: result.subscriptionId,
     });

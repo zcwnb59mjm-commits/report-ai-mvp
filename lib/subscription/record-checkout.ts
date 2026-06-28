@@ -1,6 +1,9 @@
 import type Stripe from "stripe";
 
-import { linkStripeSubscriptionFromCheckoutEmail } from "@/lib/user-access/link-stripe-subscription";
+import {
+  linkStripeSubscriptionFromCheckoutEmail,
+  linkStripeSubscriptionToUserById,
+} from "@/lib/user-access/link-stripe-subscription";
 
 export type SubscriptionRecord = {
   customerId: string | null;
@@ -51,10 +54,23 @@ export async function recordSubscriptionCheckout(
     return null;
   }
 
-  await linkStripeSubscriptionFromCheckoutEmail(record.customerEmail, {
-    subscriptionId: record.subscriptionId,
-    customerId: record.customerId,
-  });
+  const metadataUserId =
+    typeof session.metadata?.userId === "string"
+      ? session.metadata.userId.trim()
+      : "";
+
+  if (metadataUserId) {
+    await linkStripeSubscriptionToUserById(metadataUserId, {
+      email: record.customerEmail,
+      subscriptionId: record.subscriptionId,
+      customerId: record.customerId,
+    });
+  } else {
+    await linkStripeSubscriptionFromCheckoutEmail(record.customerEmail, {
+      subscriptionId: record.subscriptionId,
+      customerId: record.customerId,
+    });
+  }
 
   return record;
 }
