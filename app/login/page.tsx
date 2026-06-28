@@ -20,8 +20,7 @@ export default function LoginPage() {
         <p className="page-eyebrow">ログイン</p>
         <h1 className="page-title">アカウントにログイン</h1>
         <p className="page-description">
-          有料プランのご利用にはログインが必要です。メール、Google、Apple
-          のいずれかでログインできます。無料利用（端末ごと3回）はログイン不要です。
+          有料プランのご利用にはログインが必要です。メールアドレスでマジックリンクまたは確認コードによるログインができます。無料利用（端末ごと3回）はログイン不要です。
         </p>
         <div className="mt-10">
           <Suspense
