@@ -5,9 +5,11 @@ import { FormEvent, useState } from "react";
 
 import { AccessStatus } from "@/components/access-status";
 import { LoadingOverlay } from "@/components/loading-overlay";
+import { MaterialUpload } from "@/components/material-upload";
 import { SiteHeader } from "@/components/site-header";
 import { useUsageBadgeState } from "@/hooks/use-usage-badge-state";
 import { getOrCreateDeviceId } from "@/lib/device-id/device-id-storage";
+import type { SourceMaterial } from "@/lib/report-generation";
 import {
   REPORT_RESULT_STORAGE_KEY,
   REPORT_LEVELS,
@@ -21,6 +23,10 @@ export default function GeneratePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [sourceMaterial, setSourceMaterial] = useState<SourceMaterial | null>(
+    null,
+  );
+  const [isExtractingMaterial, setIsExtractingMaterial] = useState(false);
   const { mounted, usageState, canGenerate, refreshUsageState } =
     useUsageBadgeState();
 
@@ -70,7 +76,7 @@ export default function GeneratePage() {
           reportLevel,
           professorInstructions: professorInstructions || undefined,
           requiredKeywords,
-          sourceMaterials: [],
+          sourceMaterials: sourceMaterial ? [sourceMaterial] : [],
         }),
       });
 
@@ -267,6 +273,13 @@ export default function GeneratePage() {
             />
           </div>
 
+          <MaterialUpload
+            disabled={isSubmitting}
+            value={sourceMaterial}
+            onChange={setSourceMaterial}
+            onExtractingChange={setIsExtractingMaterial}
+          />
+
           {errorMessage && !isLimitReached ? (
             <p className="alert-message">{errorMessage}</p>
           ) : null}
@@ -274,7 +287,9 @@ export default function GeneratePage() {
           <div className="flex justify-center pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || !mounted || isLimitReached}
+              disabled={
+                isSubmitting || !mounted || isLimitReached || isExtractingMaterial
+              }
               className="btn-primary"
             >
               レポートを作成

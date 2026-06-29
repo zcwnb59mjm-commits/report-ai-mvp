@@ -141,6 +141,56 @@ body {
   .body-preview {
     @apply rounded-[22px] border border-black/[0.06] bg-white px-6 py-7 sm:px-8 sm:py-8;
   }
+
+  .legal-document {
+    @apply space-y-10 text-[15px] leading-[1.85] text-neutral-700;
+  }
+
+  .legal-document section {
+    @apply space-y-4;
+  }
+
+  .legal-document h2 {
+    @apply text-[20px] font-semibold tracking-tight text-black sm:text-[22px];
+  }
+
+  .legal-document h3 {
+    @apply text-[16px] font-semibold text-black;
+  }
+
+  .legal-document p {
+    @apply text-neutral-600;
+  }
+
+  .legal-document ul,
+  .legal-document ol {
+    @apply list-outside space-y-2 pl-5 text-neutral-600;
+  }
+
+  .legal-document ul {
+    @apply list-disc;
+  }
+
+  .legal-document ol {
+    @apply list-decimal;
+  }
+
+  .legal-document a {
+    @apply text-black underline underline-offset-4 transition-opacity hover:opacity-70;
+  }
+
+  .legal-table {
+    @apply w-full border-collapse text-left text-[14px];
+  }
+
+  .legal-table th,
+  .legal-table td {
+    @apply border border-black/[0.08] px-4 py-3 align-top;
+  }
+
+  .legal-table th {
+    @apply w-[34%] bg-[#fafafa] font-semibold text-black sm:w-[28%];
+  }
 }
 
 @keyframes pulse-dot {

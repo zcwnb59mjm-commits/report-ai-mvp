@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+
+const RESEND_COOLDOWN_SECONDS = 60;
 
 function getSafeNextPath(next: string | null): string {
   if (next && next.startsWith("/")) {
@@ -12,6 +14,27 @@ function getSafeNextPath(next: string | null): string {
   }
 
   return "/generate";
+}
+
+function formatAuthErrorMessage(error: unknown): string {
+  if (error && typeof error === "object") {
+    const authError = error as { message?: string; code?: string };
+    const message = authError.message?.toLowerCase() ?? "";
+    const code = authError.code?.toLowerCase() ?? "";
+
+    if (
+      message.includes("email rate limit exceeded") ||
+      code === "over_email_send_rate_limit"
+    ) {
+      return "短時間に送信しすぎました。しばらく時間をおいて再度お試しください。";
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+  }
+
+  return "メール送信に失敗しました。";
 }
 
 export function LoginForm() {
@@ -26,9 +49,21 @@ export function LoginForm() {
     authError ? "ログインに失敗しました。もう一度お試しください。" : null,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  async function sendMagicLink() {
     setErrorMessage(null);
     setMessage(null);
     setIsSubmitting(true);
@@ -49,21 +84,33 @@ export function LoginForm() {
       }
 
       setEmailSent(true);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
       setMessage(
         `${email.trim()} 宛にログインリンクを送信しました。メール内のリンクを開いてログインを完了してください。`,
       );
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "メール送信に失敗しました。",
-      );
+      setErrorMessage(formatAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await sendMagicLink();
+  }
+
+  async function handleResend() {
+    if (isSubmitting || resendCooldown > 0) {
+      return;
+    }
+
+    await sendMagicLink();
+  }
+
   if (emailSent) {
+    const canResend = !isSubmitting && resendCooldown === 0;
+
     return (
       <div className="space-y-6">
         <div className="card space-y-4 text-center sm:text-left">
@@ -80,9 +127,26 @@ export function LoginForm() {
 
         <button
           type="button"
+          onClick={handleResend}
+          disabled={!canResend}
+          className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSubmitting
+            ? "送信中..."
+            : resendCooldown > 0
+              ? `再送信は ${resendCooldown} 秒後に可能です`
+              : "Magic Link を再送信"}
+        </button>
+
+        {errorMessage ? <p className="alert-message">{errorMessage}</p> : null}
+
+        <button
+          type="button"
           onClick={() => {
             setEmailSent(false);
             setMessage(null);
+            setErrorMessage(null);
+            setResendCooldown(0);
           }}
           className="btn-secondary w-full"
         >

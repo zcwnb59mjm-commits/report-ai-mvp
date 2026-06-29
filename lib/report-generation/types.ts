@@ -1,6 +1,6 @@
-/** 将来の PDF / テキスト資料取り込み用。現時点では空配列で運用。 */
+/** PDF / テキスト / docx 資料取り込み用 */
 export type SourceMaterial = {
-  type: "pdf" | "text";
+  type: "pdf" | "text" | "docx";
   label: string;
   content: string;
 };

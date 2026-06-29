@@ -39,6 +39,16 @@ function formatKeywords(keywords: string[]): string[] {
   return ["", "【必ず含めるキーワード】", keywords.join("、")];
 }
 
+function formatSourceMaterialGuidance(): string[] {
+  return [
+    "",
+    "【参考資料の扱い】",
+    "- 参考資料がある場合は、その内容を主要な根拠として活用する。",
+    "- 資料に記載のない事実・数値・文献・固有名称は断定しない。",
+    "- 資料で確認できない内容が必要な場合は、一般的な説明にとどめ、推測であることを明示する。",
+  ];
+}
+
 function formatSourceMaterials(
   sourceMaterials: ReportGenerationInput["sourceMaterials"],
 ): string[] {
@@ -114,6 +124,7 @@ export function buildOutlineInstructions(): string {
     "- 文字数配分の目安: はじめに10〜15%、本論①25〜30%、本論②25〜30%、考察20〜25%、まとめ10〜15%。",
     "- 必須キーワードがある場合は、自然に組み込める位置を各セクション方針に反映する。",
     "- 参考資料がある場合は、その内容を踏まえた論点設計にする。",
+    ...formatSourceMaterialGuidance().slice(1),
     "- 構成案は執筆メモとして2〜4文で具体的に書く。",
     "- AI定型句（「まず」「次に」「最後に」等）は使わない。",
   ].join("\n");
@@ -155,6 +166,7 @@ export function buildBodyDraftInstructions(input: ReportGenerationInput): string
     "- 必須キーワードは自然な文脈で必ず含める。",
     "- 教授からの指示がある場合は優先的に反映する。",
     "- 参考資料がある場合は内容を適切に反映する。",
+    ...formatSourceMaterialGuidance().slice(1),
     "",
     "【参考文献】",
     "- 必要な場合のみ末尾に「参考文献」を付ける。",

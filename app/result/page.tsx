@@ -20,7 +20,6 @@ import {
 } from "@/lib/report";
 import { downloadReportDocx } from "@/lib/export-report-docx";
 import { downloadReportPdf } from "@/lib/export-report-pdf";
-import { USAGE_LIMIT_MESSAGE } from "@/lib/usage-limit";
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return <h2 className="section-heading">{children}</h2>;
@@ -68,10 +67,8 @@ export default function ResultPage() {
   const [copyLabel, setCopyLabel] = useState("コピー");
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const { mounted, usageState, canGenerate, refreshUsageState } =
-    useUsageBadgeState();
+  const { mounted, usageState, refreshUsageState } = useUsageBadgeState();
 
-  const isLimitReached = mounted && !canGenerate;
   const isExporting = isDownloadingDocx || isDownloadingPdf;
 
   useEffect(() => {
@@ -110,13 +107,6 @@ export default function ResultPage() {
     if (!result) return;
 
     setBodyError(null);
-
-    if (!canGenerate) {
-      setBodyError(USAGE_LIMIT_MESSAGE);
-      await refreshUsageState();
-      return;
-    }
-
     setIsGeneratingBody(true);
 
     try {
@@ -150,7 +140,6 @@ export default function ResultPage() {
         throw new Error("本文の生成に失敗しました。");
       }
 
-      await refreshUsageState();
       persistResult({ ...result, body: data.body });
     } catch (error) {
       setBodyError(
@@ -285,6 +274,12 @@ export default function ResultPage() {
                   value={result.requiredKeywords.join("、")}
                 />
               ) : null}
+              {result.sourceMaterials.length > 0 ? (
+                <MetaItem
+                  label="参考資料"
+                  value={result.sourceMaterials.map((item) => item.label).join("、")}
+                />
+              ) : null}
             </dl>
           </ResultCard>
 
@@ -313,7 +308,7 @@ export default function ResultPage() {
                 <button
                   type="button"
                   onClick={handleGenerateBody}
-                  disabled={isGeneratingBody || !mounted || isLimitReached}
+                  disabled={isGeneratingBody || !mounted}
                   className="btn-primary"
                 >
                   この構成から本文を生成
@@ -358,7 +353,7 @@ export default function ResultPage() {
                 <button
                   type="button"
                   onClick={handleGenerateBody}
-                  disabled={isGeneratingBody || !mounted || isLimitReached}
+                  disabled={isGeneratingBody || !mounted}
                   className="btn-secondary-lg"
                 >
                   本文を再生成

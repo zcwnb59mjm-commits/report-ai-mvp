@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 import { AuthButton } from "@/components/auth-button";
-
-const SITE_NAME = "ReportAI";
+import { SITE_NAME } from "@/lib/site";
 
 type SiteHeaderProps = {
   homeHref?: string;

@@ -68,7 +68,12 @@ function parseSourceMaterials(value: unknown): SourceMaterial[] {
     const label = parseString(record.label);
     const content = parseString(record.content);
 
-    if ((type !== "pdf" && type !== "text") || !label || !content) continue;
+    if (
+      (type !== "pdf" && type !== "text" && type !== "docx") ||
+      !label ||
+      !content
+    )
+      continue;
 
     materials.push({ type, label, content });
   }

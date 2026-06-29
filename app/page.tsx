@@ -2,10 +2,12 @@ import Link from "next/link";
 
 import { AuthButton } from "@/components/auth-button";
 import { SerialCodeSection } from "@/components/serial-code-section";
+import { SiteFooter } from "@/components/site-footer";
 import { MONTHLY_PLAN_PRICE_LABEL } from "@/lib/pricing";
+import { SITE_NAME } from "@/lib/site";
 
 const SITE = {
-  name: "ReportAI",
+  name: SITE_NAME,
   tagline: "大学生向けレポートAI",
   catchCopy: "レポート作成を、\nもっとスマートに。",
   description:
@@ -37,12 +39,6 @@ const FEATURES = [
     description:
       "完成したレポートをそのままダウンロード。提出形式に合わせて出力できます。",
   },
-] as const;
-
-const FOOTER_LINKS = [
-  { label: "利用規約", href: "/terms" },
-  { label: "プライバシーポリシー", href: "/privacy" },
-  { label: "お問い合わせ", href: "/contact" },
 ] as const;
 
 function LandingHeader() {
@@ -151,34 +147,6 @@ function CtaSection() {
         {SITE.ctaLabel}
       </Link>
     </section>
-  );
-}
-
-function SiteFooter() {
-  const year = new Date().getFullYear();
-
-  return (
-    <footer className="border-t border-black/[0.06]">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-5 py-14 sm:flex-row sm:justify-between sm:px-8">
-        <p className="text-[13px] text-neutral-400">
-          © {year} {SITE.name}
-        </p>
-        <nav aria-label="フッターナビゲーション">
-          <ul className="flex flex-wrap justify-center gap-8">
-            {FOOTER_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-[13px] text-neutral-500 transition-colors hover:text-black"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
-    </footer>
   );
 }
 
