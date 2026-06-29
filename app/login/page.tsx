@@ -17,10 +17,11 @@ export default function LoginPage() {
       </header>
 
       <main className="page-main text-center sm:text-left">
-        <p className="page-eyebrow">ログイン</p>
-        <h1 className="page-title">アカウントにログイン</h1>
+        <p className="page-eyebrow">有料プラン</p>
+        <h1 className="page-title">メールでログイン</h1>
         <p className="page-description">
-          有料プランのご利用にはログインが必要です。メールアドレスでマジックリンクまたは確認コードによるログインができます。無料利用（端末ごと3回）はログイン不要です。
+          月480円プランのご利用にはログインが必要です。メールアドレスを入力すると、Magic
+          Link（ログイン用リンク）が届きます。無料利用（端末ごと3回）はログイン不要です。
         </p>
         <div className="mt-10">
           <Suspense
