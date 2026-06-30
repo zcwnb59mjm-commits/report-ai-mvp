@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 
 import {
-  getSourceMaterialTypeFromFilename,
-  SOURCE_MATERIAL_MAX_FILE_SIZE_BYTES,
-} from "@/lib/source-materials/constants";
-import { extractSourceMaterialText } from "@/lib/source-materials/extract-text";
+  extractDocxMaterialFromBuffer,
+  validateUploadedFile,
+} from "@/lib/source-materials/extract-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -30,40 +29,19 @@ export async function POST(request: Request) {
     );
   }
 
-  if (file.size === 0) {
-    return NextResponse.json(
-      { error: "空のファイルはアップロードできません。" },
-      { status: 400 },
-    );
-  }
+  const validationError = validateUploadedFile(file);
 
-  if (file.size > SOURCE_MATERIAL_MAX_FILE_SIZE_BYTES) {
-    return NextResponse.json(
-      { error: "ファイルサイズは10MB以下にしてください。" },
-      { status: 400 },
-    );
-  }
-
-  const type = getSourceMaterialTypeFromFilename(file.name);
-
-  if (!type) {
-    return NextResponse.json(
-      { error: "対応形式は PDF、txt、docx のみです。" },
-      { status: 400 },
-    );
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const content = await extractSourceMaterialText(buffer, type);
+    const material = await extractDocxMaterialFromBuffer(buffer, file.name);
 
-    return NextResponse.json({
-      type,
-      label: file.name,
-      content,
-    });
+    return NextResponse.json(material);
   } catch (error) {
-    console.error("Failed to extract source material text:", error);
+    console.error("Failed to extract docx text:", error);
 
     return NextResponse.json(
       {

@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react";
 
+import { extractSourceMaterialFromFile } from "@/lib/source-materials/client/extract-material";
 import {
   SOURCE_MATERIAL_ACCEPT,
   SOURCE_MATERIAL_MAX_FILE_SIZE_BYTES,
-  getSourceMaterialTypeFromFilename,
+  getSourceMaterialTypeFromFile,
 } from "@/lib/source-materials/constants";
 import type { SourceMaterial } from "@/lib/report-generation";
 
@@ -20,6 +21,18 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatClientError(error: unknown): string {
+  if (error instanceof DOMException) {
+    return "資料の読み込みに失敗しました。ファイル形式を確認して再度お試しください。";
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "資料の読み込みに失敗しました。";
 }
 
 export function MaterialUpload({
@@ -51,7 +64,7 @@ export function MaterialUpload({
       return;
     }
 
-    if (!getSourceMaterialTypeFromFilename(file.name)) {
+    if (!getSourceMaterialTypeFromFile(file)) {
       setErrorMessage("対応形式は PDF、txt、docx のみです。");
       setSelectedFileName(null);
       onChange(null);
@@ -63,35 +76,12 @@ export function MaterialUpload({
     onExtractingChange?.(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/materials/extract", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = (await response.json()) as SourceMaterial & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "資料の読み込みに失敗しました。");
-      }
-
-      if (!data.type || !data.label || !data.content) {
-        throw new Error("資料の読み込みに失敗しました。");
-      }
-
-      onChange({
-        type: data.type,
-        label: data.label,
-        content: data.content,
-      });
+      const material = await extractSourceMaterialFromFile(file);
+      onChange(material);
     } catch (error) {
       setSelectedFileName(null);
       onChange(null);
-      setErrorMessage(
-        error instanceof Error ? error.message : "資料の読み込みに失敗しました。",
-      );
+      setErrorMessage(formatClientError(error));
     } finally {
       setIsExtracting(false);
       onExtractingChange?.(false);
