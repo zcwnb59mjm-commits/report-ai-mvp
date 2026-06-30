@@ -9,6 +9,7 @@ import {
   getSourceMaterialTypeFromFile,
 } from "@/lib/source-materials/constants";
 import type { SourceMaterial } from "@/lib/report-generation";
+import { FieldLabel } from "@/components/field-label";
 
 type MaterialUploadProps = {
   disabled?: boolean;
@@ -100,12 +101,9 @@ export function MaterialUpload({
 
   return (
     <div>
-      <label htmlFor="sourceMaterial" className="field-label">
+      <FieldLabel htmlFor="sourceMaterial" optional>
         資料をアップロード
-        <span className="ml-2 text-[12px] font-normal text-neutral-400">
-          任意
-        </span>
-      </label>
+      </FieldLabel>
 
       <div className="rounded-2xl border border-dashed border-black/[0.12] bg-white px-5 py-6">
         <input

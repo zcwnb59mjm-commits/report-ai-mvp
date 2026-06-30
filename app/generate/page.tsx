@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { AccessStatus } from "@/components/access-status";
+import { FieldLabel } from "@/components/field-label";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { MaterialUpload } from "@/components/material-upload";
 import { SiteHeader } from "@/components/site-header";
@@ -127,9 +128,9 @@ export default function GeneratePage() {
 
         <form onSubmit={handleSubmit} className="card mt-12 space-y-8">
           <div>
-            <label htmlFor="theme" className="field-label">
+            <FieldLabel htmlFor="theme" required>
               レポートテーマ
-            </label>
+            </FieldLabel>
             <input
               id="theme"
               name="theme"
@@ -142,9 +143,9 @@ export default function GeneratePage() {
           </div>
 
           <div>
-            <label htmlFor="wordCount" className="field-label">
+            <FieldLabel htmlFor="wordCount" required>
               文字数
-            </label>
+            </FieldLabel>
             <input
               id="wordCount"
               name="wordCount"
@@ -160,9 +161,9 @@ export default function GeneratePage() {
           </div>
 
           <div>
-            <label htmlFor="courseName" className="field-label">
+            <FieldLabel htmlFor="courseName" required>
               授業名
-            </label>
+            </FieldLabel>
             <input
               id="courseName"
               name="courseName"
@@ -175,9 +176,9 @@ export default function GeneratePage() {
           </div>
 
           <div>
-            <label htmlFor="submissionFormat" className="field-label">
+            <FieldLabel htmlFor="submissionFormat" required>
               提出形式
-            </label>
+            </FieldLabel>
             <select
               id="submissionFormat"
               name="submissionFormat"
@@ -199,9 +200,9 @@ export default function GeneratePage() {
 
           <div className="grid gap-8 sm:grid-cols-2">
             <div>
-              <label htmlFor="writingStyle" className="field-label">
+              <FieldLabel htmlFor="writingStyle" required>
                 文体
-              </label>
+              </FieldLabel>
               <select
                 id="writingStyle"
                 name="writingStyle"
@@ -219,9 +220,9 @@ export default function GeneratePage() {
             </div>
 
             <div>
-              <label htmlFor="reportLevel" className="field-label">
+              <FieldLabel htmlFor="reportLevel" required>
                 レポートレベル
-              </label>
+              </FieldLabel>
               <select
                 id="reportLevel"
                 name="reportLevel"
@@ -240,12 +241,9 @@ export default function GeneratePage() {
           </div>
 
           <div>
-            <label htmlFor="professorInstructions" className="field-label">
+            <FieldLabel htmlFor="professorInstructions" optional>
               教授からの指示
-              <span className="ml-2 text-[12px] font-normal text-neutral-400">
-                任意
-              </span>
-            </label>
+            </FieldLabel>
             <textarea
               id="professorInstructions"
               name="professorInstructions"
@@ -257,12 +255,13 @@ export default function GeneratePage() {
           </div>
 
           <div>
-            <label htmlFor="requiredKeywords" className="field-label">
+            <FieldLabel
+              htmlFor="requiredKeywords"
+              optional
+              optionalText="任意・カンマ区切り"
+            >
               必ず含めたいキーワード
-              <span className="ml-2 text-[12px] font-normal text-neutral-400">
-                任意・カンマ区切り
-              </span>
-            </label>
+            </FieldLabel>
             <input
               id="requiredKeywords"
               name="requiredKeywords"

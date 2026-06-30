@@ -127,6 +127,7 @@ export default function ResultPage() {
           requiredKeywords: result.requiredKeywords,
           sourceMaterials: result.sourceMaterials,
           outline: result.outline,
+          historyId: result.historyId,
         }),
       });
 

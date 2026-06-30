@@ -12,6 +12,8 @@ import {
   OUTLINE_JSON_SCHEMA_DESCRIPTIONS,
   parseReportGenerationInput,
 } from "@/lib/report-generation";
+import type { ReportGenerationInput } from "@/lib/report-generation";
+import { createReportHistory } from "@/lib/report-history/server";
 import type { ReportGenerateResult } from "@/lib/report";
 import {
   recordGenerationAccessUse,
@@ -175,7 +177,17 @@ export async function POST(request: Request) {
 
     await recordGenerationAccessUse(access.userId, access.deviceId);
 
-    return NextResponse.json(result);
+    let historyId: string | undefined;
+
+    if (access.userId) {
+      const history = await createReportHistory(access.userId, input, result);
+      historyId = history.id;
+    }
+
+    return NextResponse.json({
+      ...result,
+      historyId,
+    });
   } catch (error) {
     console.error("Failed to generate report outline:", error);
 

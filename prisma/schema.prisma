@@ -8,19 +8,39 @@ datasource db {
 }
 
 model User {
-  id                   String    @id @default(cuid())
-  supabaseUserId       String?   @unique
+  id                   String          @id @default(cuid())
+  supabaseUserId       String?         @unique
   name                 String?
-  email                String    @unique
+  email                String          @unique
   emailVerified        DateTime?
   image                String?
-  usageCount           Int       @default(0)
+  usageCount           Int             @default(0)
   stripeCustomerId     String?
   stripeSubscriptionId String?
-  subscriptionActive   Boolean   @default(false)
-  lifetimeUnlocked     Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  subscriptionActive   Boolean         @default(false)
+  lifetimeUnlocked     Boolean         @default(false)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  reportHistories      ReportHistory[]
+}
+
+model ReportHistory {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportTheme      String
+  wordCount        Int
+  className        String
+  format           String
+  tone             String
+  level            String
+  uploadedFileName String?
+  generatedContent String   @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("report_histories")
 }
 
 model AnonymousUsage {

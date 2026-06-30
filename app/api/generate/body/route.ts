@@ -5,7 +5,9 @@ import OpenAI, {
 } from "openai";
 import { NextResponse } from "next/server";
 
+import { getAppUser } from "@/lib/auth/get-app-user";
 import { getOpenAIApiKey } from "@/lib/openai-api-key";
+import { updateReportHistoryContent } from "@/lib/report-history/server";
 import {
   buildBodyDraftInput,
   buildBodyDraftInstructions,
@@ -125,6 +127,20 @@ export async function POST(request: Request) {
 
     if (!bodyText) {
       throw new Error("Empty humanized response");
+    }
+
+    const historyId =
+      typeof body.historyId === "string" ? body.historyId.trim() : "";
+
+    if (historyId) {
+      const appUser = await getAppUser();
+
+      if (appUser) {
+        await updateReportHistoryContent(appUser.prismaUser.id, historyId, {
+          outline,
+          body: bodyText,
+        });
+      }
     }
 
     return NextResponse.json({ body: bodyText });

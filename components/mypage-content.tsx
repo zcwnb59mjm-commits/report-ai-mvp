@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import type { UsageBadgeState } from "@/lib/access/types";
 import { MONTHLY_PLAN_PRICE_LABEL } from "@/lib/pricing";
+import { ReportHistorySection } from "@/components/report-history-section";
 import { createClient } from "@/lib/supabase/client";
 
 type MypageAccessResponse = {
@@ -164,6 +165,8 @@ export function MypageContent() {
       </div>
 
       {errorMessage ? <p className="alert-message">{errorMessage}</p> : null}
+
+      <ReportHistorySection />
     </div>
   );
 }

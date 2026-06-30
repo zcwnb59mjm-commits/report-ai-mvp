@@ -18,6 +18,7 @@ export type ReportOutline = {
 export type ReportGenerateResult = ReportGenerationInput & {
   outline: ReportOutline;
   body?: string;
+  historyId?: string;
 };
 
 export type { ReportLevel, SourceMaterial, WritingStyle };
@@ -85,7 +86,8 @@ export function isReportGenerateResult(value: unknown): value is ReportGenerateR
     typeof outlineData.body2 === "string" &&
     typeof outlineData.discussion === "string" &&
     typeof outlineData.conclusion === "string" &&
-    (data.body === undefined || typeof data.body === "string")
+    (data.body === undefined || typeof data.body === "string") &&
+    (data.historyId === undefined || typeof data.historyId === "string")
   );
 }
 
